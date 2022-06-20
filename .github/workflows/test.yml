@@ -1,0 +1,35 @@
+name: colink_python_action
+on: [push]
+jobs:
+  colink_python_action:
+    defaults:
+      run:
+        shell: bash
+    runs-on:  self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          ssh-key: ${{ secrets.SSH_KEY }}
+      - name: SSH Agent
+        run: |
+          eval `ssh-agent`
+          ssh-add - <<< "${{ secrets.SSH_KEY }}"
+          echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> $GITHUB_ENV
+      - name: Pull and Build Server
+        env:
+          GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"
+        run: bash pull-and-build-server.sh
+      - name: Install Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.9"
+          architecture: "x64"
+      - name: Install Requirements
+        run: pip install  .
+      - name: Install Pytest
+        run: pip install pytest
+      - name: Run test
+        run: pytest test/test_python.py
+        timeout-minutes: 10
