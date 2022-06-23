@@ -8,16 +8,18 @@ import concurrent.futures
 from typing import List
 import logging
 import sys
+from colink.sdk_p import _sha256
+from colink.sdk_a import str_to_byte,byte_to_str
 
 CORE_ADDR = "127.0.0.1"
 CORE_DOMAIN_NAME = "localhost"
 MQ_AMQP = "amqp://guest:guest@localhost:5672"
 MQ_API = "http://guest:guest@localhost:15672/api"
 MQ_PREFIX = "colink-test-python"
-USER_NUM = [2, 2, 2, 2, 2, 3, 3, 4, 4, 5, 5]
+USER_NUM = [3, 3, 4, 4, 5, 5]
 
 
-def run_greetings(port: int, user_num: int):
+def run_crypten(port: int, user_num: int):
     try:
         addr = "http://{}:{}".format(CORE_ADDR, port)
         child_processes = []
@@ -45,37 +47,28 @@ def run_greetings(port: int, user_num: int):
         random_number = random.randint(0, 999)
         msg = str(random_number)
         threads = []  # thread pool
-        if user_num == 2:
-            print('user ru  task')
-            threads.append(
-                thread_pool.submit(user_run_task, addr, users[0], users[1], msg)
-            )
-        else:
-            print('user greeting to multiple')
-            threads.append(
-                thread_pool.submit(user_greetings_to_multiple_users, addr, users)
-            )
+
+        threads.append(thread_pool.submit(run_crypten_deploy, addr, users))
         for i in range(1, user_num):
             threads.append(
-                thread_pool.submit(run_auto_confirm, addr, users[i], "greetings")
+                thread_pool.submit(run_auto_confirm, addr, users[i], "crypten_deploy")
             )
         for user in users:
             num = random.randrange(1, 2)
             for _ in range(num):
-                threads.append(thread_pool.submit(run_protocol_greeting, addr, user))
+                threads.append(
+                    thread_pool.submit(run_protocol_crypten_deploy, addr, user)
+                )
         for th in threads:
             child_processes.append(th.result())
         logging.info("wait threads to be confirmed")
         rnd_receiver = random.randrange(1, user_num)
-        msg = get_next_greeting_message(addr, users[rnd_receiver], int(start_time))
-        if user_num == 2:
-            assert msg == str(random_number).encode()
-            logging.info(
-                "verified received greeting msg: %s sent %d", msg, random_number
-            )
-        else:
-            assert msg == "hello".encode()
-            logging.info("verified received greeting msg: %s sent %s", msg, "hello")
+        msg = get_next_crypten_message(addr, users[rnd_receiver], int(start_time))
+        for i,user in enumerate(users):
+            print(i,_sha256(byte_to_str(user)))
+        print(msg,len(msg))
+        #assert msg == "hello".encode()
+        #logging.info("verified received crypten msg: %s sent %s", msg, "hello")
 
     finally:
         for c in child_processes:
@@ -126,27 +119,10 @@ def admin_import_users_and_exchange_guest_jwts(
     return users
 
 
-def user_run_task(addr: str, jwt_a: str, jwt_b: str, msg: str):
+def run_crypten_deploy(addr: str, users: List[str]):
     time.sleep(random.randrange(0, 1000) / 1000)
     return subprocess.Popen(
-        [
-            "python3",
-            "-m",
-            "examples.user_run_task",
-            addr,
-            jwt_a,
-            jwt_b,
-            msg,
-        ],
-        stdout=DEVNULL,
-        stderr=sys.stdout,
-    )
-
-
-def user_greetings_to_multiple_users(addr: str, users: List[str]):
-    time.sleep(random.randrange(0, 1000) / 1000)
-    return subprocess.Popen(
-        ["python3", "-m", "examples.user_greetings_to_multiple_users", addr, *users],
+        ["python3", "-m", "crypten.run_crypten_deploy", addr, *users],
         stdout=DEVNULL,
         stderr=sys.stdout,
     )
@@ -161,13 +137,13 @@ def run_auto_confirm(addr: str, jwt: str, protocol_name: str):
     )
 
 
-def run_protocol_greeting(addr: str, jwt: str):
+def run_protocol_crypten_deploy(addr: str, jwt: str):
     time.sleep(random.randrange(0, 1000) / 1000)
     return subprocess.Popen(
         [
             "python3",
             "-m",
-            "examples.protocol_greetings",
+            "crypten.protocol_crypten_deploy",
             "--addr",
             addr,
             "--jwt",
@@ -178,20 +154,20 @@ def run_protocol_greeting(addr: str, jwt: str):
     )
 
 
-def get_next_greeting_message(addr: str, jwt: str, now: int):
+def get_next_crypten_message(addr: str, jwt: str, now: int):
     res = subprocess.run(
-        ["python3", "-m", "examples.get_next_greeting_msg", addr, jwt, str(now)],
+        ["python3", "-m", "crypten.get_next_crypten_msg", addr, jwt, str(now)],
         capture_output=True,
         check=True,
     )
     return res.stdout
 
 
-def test_example_protocol_greetings():
-    logging.basicConfig(
-        filename="test_example_protocol.log", filemode="a", level=logging.INFO
-    )
-    for i in range(0, 11):
-        run_greetings(10000 + i, USER_NUM[i])
-if __name__=='__main__':
-    test_example_protocol_greetings()
+def test_crypten():
+    logging.basicConfig(filename="test_crypten.log", filemode="a", level=logging.INFO)
+    for i in range(0, 6):
+        run_crypten(8080 + i, USER_NUM[i])
+
+
+if __name__ == "__main__":
+    test_crypten()
