@@ -113,8 +113,7 @@ def host_import_users_and_exchange_guest_jwts(
     res = subprocess.run(
         [
             "python3",
-            "-m",
-            "examples.host_import_user_exchange_jwt",
+            "examples/host_import_user_exchange_jwt.py",
             addr,
             jwt,
             str(user_num),
@@ -131,8 +130,7 @@ def user_run_task(addr: str, jwt_a: str, jwt_b: str, msg: str):
     return subprocess.Popen(
         [
             "python3",
-            "-m",
-            "examples.user_run_task",
+            "examples/user_run_task.py",
             addr,
             jwt_a,
             jwt_b,
@@ -146,7 +144,7 @@ def user_run_task(addr: str, jwt_a: str, jwt_b: str, msg: str):
 def user_greetings_to_multiple_users(addr: str, users: List[str]):
     time.sleep(random.randrange(0, 1000) / 1000)
     return subprocess.Popen(
-        ["python3", "-m", "examples.user_greetings_to_multiple_users", addr, *users],
+        ["python3",  "examples/user_greetings_to_multiple_users.py", addr, *users],
         stdout=DEVNULL,
         stderr=sys.stdout,
     )
@@ -155,7 +153,7 @@ def user_greetings_to_multiple_users(addr: str, users: List[str]):
 def run_auto_confirm(addr: str, jwt: str, protocol_name: str):
     time.sleep(random.randrange(0, 1000) / 1000)
     return subprocess.Popen(
-        ["python3", "-m", "examples.auto_confirm", addr, jwt, protocol_name],
+        ["python3", "examples/auto_confirm.py", addr, jwt, protocol_name],
         stdout=DEVNULL,
         stderr=sys.stdout,
     )
@@ -166,8 +164,7 @@ def run_protocol_greeting(addr: str, jwt: str):
     return subprocess.Popen(
         [
             "python3",
-            "-m",
-            "examples.protocol_greetings",
+            "examples/protocol_greetings.py",
             "--addr",
             addr,
             "--jwt",
@@ -180,7 +177,7 @@ def run_protocol_greeting(addr: str, jwt: str):
 
 def get_next_greeting_message(addr: str, jwt: str, now: int):
     res = subprocess.run(
-        ["python3", "-m", "examples.get_next_greeting_msg", addr, jwt, str(now)],
+        ["python3", "examples/get_next_greeting_msg.py", addr, jwt, str(now)],
         capture_output=True,
         check=True,
     )

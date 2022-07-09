@@ -11,25 +11,25 @@ CoLink Python SDK  provides a Python3 language support toolkit for application d
 ## Examples
 
 ```
-python3 -m examples.host_import_user
+python3 examples/host_import_user.py
 ```
 ```
-python3 -m examples.host_import_user_exchange_jwt <address> <host_jwt> <number> 
+python3 examples/host_import_user_exchange_jwt.py <address> <host_jwt> <number> 
 ```
 ```
-python3 -m examples.user_run_task <address> <user_jwt A> <user_jwt B> <message> # <message> is optional
+python3 examples/user_run_task.py <address> <user_jwt A> <user_jwt B> <message> # <message> is optional
 ```
 ```
-python3 -m examples.user_greetings_to_multiple_users <address> <initiator_jwt> <receiver_jwt A> <receiver_jwt B> <receiver_jwt...
+python3 examples/user_greetings_to_multiple_users.py <address> <initiator_jwt> <receiver_jwt A> <receiver_jwt B> <receiver_jwt...
 ```
 ```
-python3 -m examples.auto_confirm <address> <user_jwt> <protocol_name>
+python3 examples/auto_confirm.py <address> <user_jwt> <protocol_name>
 ```
 ```
-python3 -m examples.get_next_greeting_message <address> <user_jwt> 
+python3 examples/get_next_greeting_message.py <address> <user_jwt> 
 ```
 ```
-python3 -m examples.protocol_greetings <address> <user_jwt> 
+python3 examples/protocol_greetings.py <address> <user_jwt> 
 ```
 
 ## Test
