@@ -9,7 +9,7 @@ from colink.sdk_a import (
 
 if __name__ == "__main__":
     logging.basicConfig(filename="refresh_token.log", filemode="a")
-    core_jwt = open("./colink-server/admin_token.txt", "r").readline()
+    core_jwt = open("./colink-server/host_token.txt", "r").readline()
     addr = "127.0.0.1:8080"
     expiration_timestamp = get_time_stamp() + 86400 * 31
     dds = Dds(addr, core_jwt)

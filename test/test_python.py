@@ -27,19 +27,19 @@ def run_greetings(port: int, user_num: int):
             raise AssertionError(
                 "listen {}:{}: address already in use.".format(CORE_ADDR, port)
             )
-        if os.path.exists("./colink-server/admin_token.txt"):
-            os.remove("./colink-server/admin_token.txt")
+        if os.path.exists("./colink-server/host_token.txt"):
+            os.remove("./colink-server/host_token.txt")
         child_processes.append(start_core(port, []))
         while True:
             if (
-                os.path.exists("./colink-server/admin_token.txt")
+                os.path.exists("./colink-server/host_token.txt")
                 and socket.socket().connect_ex((CORE_ADDR, port)) == 0
             ):
                 break
             time.sleep(0.1)
-        with open("./colink-server/admin_token.txt", "r") as f:
-            admin_token = f.read()
-        users = admin_import_users_and_exchange_guest_jwts(addr, admin_token, user_num)
+        with open("./colink-server/host_token.txt", "r") as f:
+            host_token = f.read()
+        users = host_import_users_and_exchange_guest_jwts(addr, host_token, user_num)
         assert len(users) == user_num
         start_time = time.time_ns()  # Note  here we use  nano seconds
         random_number = random.randint(0, 999)
@@ -107,14 +107,14 @@ def start_core(port, param=[]):
     )
 
 
-def admin_import_users_and_exchange_guest_jwts(
+def host_import_users_and_exchange_guest_jwts(
     addr: str, jwt: str, user_num: int
 ) -> List[str]:
     res = subprocess.run(
         [
             "python3",
             "-m",
-            "examples.admin_import_user_exchange_jwt",
+            "examples.host_import_user_exchange_jwt",
             addr,
             jwt,
             str(user_num),
@@ -192,6 +192,6 @@ def test_example_protocol_greetings():
         filename="test_example_protocol.log", filemode="a", level=logging.INFO
     )
     for i in range(0, 11):
-        run_greetings(10000 + i, USER_NUM[i])
+        run_greetings(12300 + i, USER_NUM[i])
 if __name__=='__main__':
     test_example_protocol_greetings()

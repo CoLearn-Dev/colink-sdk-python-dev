@@ -1,4 +1,5 @@
 admin_token.txt
+host_token.txt
 __pycache__/
 *.txt
 dist/

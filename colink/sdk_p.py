@@ -38,6 +38,7 @@ class ProtocolOperator:
             threads.append(
                 thread_pool.submit(thread_func, protocol_and_role, dds, user_func)
             )
+        print('Protocol Operator end!',file=open('111.txt','a'))
         return
 
 
@@ -53,8 +54,7 @@ class DdsProtocol:
         self.user_func = user_func
 
     def start(self):
-        print('jwt',_sha256(self.dds.jwt))
-        print('protoc role ',self.protocol_and_role)
+
         # TODO blocker https://github.com/camelop/dds-dev/issues/25#issuecomment-1079913866
         operator_mq_key = "_internal:protocols:{}:operator_mq".format(
             self.protocol_and_role
@@ -100,9 +100,7 @@ class DdsProtocol:
         param = pika.connection.URLParameters(url=mq_addr)
         mq = pika.BlockingConnection(param)  # establish rabbitmq connection
         channel = mq.channel()
-        print('wait queue!')
         for method, properties, body in channel.consume(queue_name):
-            print('processed now ! jwt',_sha256(self.dds.jwt),self.protocol_and_role)
             data = body
             message = colink_pb2.SubscriptionMessage.FromString(data)
             if message.change_type != "delete":
@@ -130,14 +128,12 @@ class DdsProtocol:
                                 )
                             )
                             raise e
-
-                       
-                        #print('task id ',_sha256( task.task_id))
-                        
                         self.dds.finish_task(task.task_id)
+                        
                         logging.info("finnish task:%s", task.task_id)
+                        print(self.dds.jwt,self.protocol_and_role,'finnish!')
                 else:
-                    print('not here!')
+                    
                     logging.error("Pull Task Error.")
             channel.basic_ack(method.delivery_tag)
 
@@ -163,5 +159,4 @@ def _dds_parse_args() -> Tuple[str, Dds]:
     return dds
 
 def _sha256(s):
-    #print(type(s))
     return sha256(s.encode('utf-8')).hexdigest()
