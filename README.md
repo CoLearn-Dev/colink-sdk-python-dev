@@ -35,7 +35,7 @@ python3 examples/protocol_greetings.py <address> <user_jwt>
 ## Test
 
 ```
-pip3 install -e .
+pip3 install colink
 pip3 install pytest
 bash pull-and-build-server.sh
 pytest test/test_python.py
