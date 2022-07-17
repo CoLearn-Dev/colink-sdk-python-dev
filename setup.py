@@ -30,7 +30,7 @@ def update_import_path_in_pb2_grpc():
 update_import_path_in_pb2_grpc()
 setup(
     name="colink",
-    version="0.1.1",
+    version="0.1.2",
     description="colink python module",
     author="Wenjie Qu",
     author_email="",

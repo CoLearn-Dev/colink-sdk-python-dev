@@ -38,7 +38,6 @@ class ProtocolOperator:
             threads.append(
                 thread_pool.submit(thread_func, protocol_and_role, dds, user_func)
             )
-        print('Protocol Operator end!',file=open('111.txt','a'))
         return
 
 
@@ -131,7 +130,6 @@ class DdsProtocol:
                         self.dds.finish_task(task.task_id)
                         
                         logging.info("finnish task:%s", task.task_id)
-                        print(self.dds.jwt,self.protocol_and_role,'finnish!')
                 else:
                     
                     logging.error("Pull Task Error.")

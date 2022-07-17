@@ -29,7 +29,7 @@ python3 examples/auto_confirm.py <address> <user_jwt> <protocol_name>
 python3 examples/get_next_greeting_message.py <address> <user_jwt> 
 ```
 ```
-python3 examples/protocol_greetings.py <address> <user_jwt> 
+python3 examples/protocol_greetings.py --addr <address> --jwt <user_jwt> 
 ```
 
 ## Test

@@ -10,6 +10,7 @@ import secp256k1
 import colink.colink_pb2_grpc as colink_pb2_grpc
 import colink.colink_pb2 as colink_pb2
 
+
 class JWT:
     def __init__(self, role: str, user_id: str, exp: int):
         self.role = role
@@ -143,7 +144,7 @@ class Dds:
                 metadata=get_jwt_auth(self.jwt),
             )
         except grpc.RpcError as e:
-            logging.error(
+            logging.warning(
                 f"ReadEntry Received RPC error: code={e.code()} message={e.details()}"
             )
             pass
