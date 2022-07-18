@@ -8,12 +8,12 @@ import logging
 from hashlib import sha256
 import concurrent.futures
 import colink.colink_pb2 as colink_pb2
-from colink.sdk_a import byte_to_str, str_to_byte, Dds, get_timestamp
+from colink.sdk_a import byte_to_str, str_to_byte, CoLink, get_timestamp
 
 
-def thread_func(protocol_and_role, dds, user_func):
-    dds_app = DdsProtocol(protocol_and_role, dds, user_func)
-    dds_app.start()
+def thread_func(protocol_and_role, cl, user_func):
+    cl_app = CoLinkProtocol(protocol_and_role, cl, user_func)
+    cl_app.start()
 
 
 class ProtocolOperator:
@@ -28,28 +28,28 @@ class ProtocolOperator:
         return decorator
 
     def run(self):
-        dds = _dds_parse_args()
+        cl = _cl_parse_args()
         thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=64)
         threads = []
         for x in self.mapping.keys():  # insert user func to map
-            dds = copy.deepcopy(dds)
+            cl = copy.deepcopy(cl)
             protocol_and_role = x
             user_func = self.mapping[x]
             threads.append(
-                thread_pool.submit(thread_func, protocol_and_role, dds, user_func)
+                thread_pool.submit(thread_func, protocol_and_role, cl, user_func)
             )
         return
 
 
-class DdsProtocol:
+class CoLinkProtocol:
     def __init__(
         self,
         protocol_and_role: str,
-        dds: Dds,
+        cl: CoLink,
         user_func,
     ):
         self.protocol_and_role = protocol_and_role
-        self.dds = dds
+        self.cl = cl
         self.user_func = user_func
 
     def start(self):
@@ -58,7 +58,7 @@ class DdsProtocol:
         operator_mq_key = "_internal:protocols:{}:operator_mq".format(
             self.protocol_and_role
         )
-        res = self.dds.read_entries(
+        res = self.cl.read_entries(
             [
                 colink_pb2.StorageEntry(
                     key_name=operator_mq_key,
@@ -74,7 +74,7 @@ class DdsProtocol:
             latest_key = "_internal:protocols:{}:started:latest".format(
                 self.protocol_and_role
             )
-            res = self.dds.read_entries(
+            res = self.cl.read_entries(
                 [
                     colink_pb2.StorageEntry(
                         key_name=list_key,
@@ -93,9 +93,9 @@ class DdsProtocol:
                         start_timestamp = min(
                             start_timestamp, get_timestamp(p.key_path)
                         )
-            queue_name = self.dds.subscribe(latest_key, start_timestamp)
-            self.dds.create_entry(operator_mq_key, str_to_byte(queue_name))
-        mq_addr, _ = self.dds.request_core_info()
+            queue_name = self.cl.subscribe(latest_key, start_timestamp)
+            self.cl.create_entry(operator_mq_key, str_to_byte(queue_name))
+        mq_addr, _ = self.cl.request_core_info()
         param = pika.connection.URLParameters(url=mq_addr)
         mq = pika.BlockingConnection(param)  # establish rabbitmq connection
         channel = mq.channel()
@@ -104,7 +104,7 @@ class DdsProtocol:
             message = colink_pb2.SubscriptionMessage.FromString(data)
             if message.change_type != "delete":
                 task_id = colink_pb2.Task.FromString(message.payload)
-                res = self.dds.read_entries(
+                res = self.cl.read_entries(
                     [
                         colink_pb2.StorageEntry(
                             key_name="_internal:tasks:{}".format(task_id.task_id),
@@ -116,10 +116,10 @@ class DdsProtocol:
                     task = colink_pb2.Task.FromString(task_entry.payload)
                     if task.status == "started":
                         # begin user func
-                        dds = self.dds
-                        dds.set_task_id(task.task_id)
+                        cl = self.cl
+                        cl.set_task_id(task.task_id)
                         try:
-                            self.user_func(dds, task.protocol_param, task.participants)
+                            self.user_func(cl, task.protocol_param, task.participants)
                         except Exception as e:
                             logging.info(
                                 "ProtocolEntry start error: Task {}: {}.".format(
@@ -127,7 +127,7 @@ class DdsProtocol:
                                 )
                             )
                             raise e
-                        self.dds.finish_task(task.task_id)
+                        self.cl.finish_task(task.task_id)
                         
                         logging.info("finnish task:%s", task.task_id)
                 else:
@@ -136,7 +136,7 @@ class DdsProtocol:
             channel.basic_ack(method.delivery_tag)
 
 
-def _dds_parse_args() -> Tuple[str, Dds]:
+def _cl_parse_args() -> CoLink:
     parser = argparse.ArgumentParser(description="protocol greeting")
     parser.add_argument("--addr", type=str, default="", help="")
     parser.add_argument("--jwt", type=str, default="", help="")
@@ -145,16 +145,16 @@ def _dds_parse_args() -> Tuple[str, Dds]:
     parser.add_argument("--key", type=str, default="", help="")
     args = parser.parse_args()
     addr, jwt, ca, cert, key = args.addr, args.jwt, args.ca, args.cert, args.key
-    dds = Dds(addr, jwt)
+    cl = CoLink(addr, jwt)
     """
     if let Some(ca) = ca {
-        dds = dds.ca_certificate(&ca);
+        cl = cl.ca_certificate(&ca);
     }
     if let (Some(cert), Some(key)) = (cert, key) {
-        dds = dds.identity(&cert, &key);
+        cl = cl.identity(&cert, &key);
     }
     """
-    return dds
+    return cl
 
 def _sha256(s):
     return sha256(s.encode('utf-8')).hexdigest()

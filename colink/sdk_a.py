@@ -18,7 +18,7 @@ class JWT:
         self.exp = exp
 
 
-class DdsSubscriber:
+class CoLinkSubscriber:
     def __init__(self, mq_uri: str, queue_name: str):
         self.uri = mq_uri
         self.queue_name = queue_name
@@ -36,7 +36,7 @@ class DdsSubscriber:
             return body
 
 
-class Dds:
+class CoLink:
     def __init__(
         self, coreaddr: str, jwt: str, ca_certificate: str = None, identity: str = None
     ):
@@ -295,9 +295,9 @@ class Dds:
             metadata=get_jwt_auth(self.jwt),
         )
 
-    def new_subscriber(self, queue_name: str) -> DdsSubscriber:
+    def new_subscriber(self, queue_name: str) -> CoLinkSubscriber:
         (mq_uri, _) = self.request_core_info()
-        subscriber = DdsSubscriber(mq_uri, queue_name)
+        subscriber = CoLinkSubscriber(mq_uri, queue_name)
         return subscriber
 
     def _grpc_connect(

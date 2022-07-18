@@ -1,7 +1,7 @@
 import sys
 import logging
 import colink.colink_pb2 as colink_pb2
-from colink.sdk_a import decode_jwt_without_validation, Dds, str_to_byte
+from colink.sdk_a import decode_jwt_without_validation, CoLink, str_to_byte
 
 if __name__ == "__main__":
     logging.basicConfig(filename="user_greeting_to_multi_users.log", filemode="a")
@@ -23,8 +23,8 @@ if __name__ == "__main__":
                 ptype="receiver",
             )
         )
-    dds = Dds(addr, jwt_initiator)
-    task_id = dds.run_task("greetings", str_to_byte(msg), participants, True)
+    cl = CoLink(addr, jwt_initiator)
+    task_id = cl.run_task("greetings", str_to_byte(msg), participants, True)
     logging.info(
         "Task %s has been created, but it will remain in waiting status until the protocol starts.",
         task_id,
