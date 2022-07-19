@@ -66,7 +66,7 @@ class CoLink:
             )
         except grpc.RpcError as e:
             logging.error(
-                f"Request CoreInfo Received RPC error: code={e.code()} message={e.details()}"
+                f"Request CoreInfo Received exception: code={e.code()} message={e.details()}"
             )
             raise e
         else:
@@ -121,7 +121,7 @@ class CoLink:
             )
         except grpc.RpcError as e:
             logging.error(
-                f"ImportUser Received RPC error: code={e.code()} message={e.details()}"
+                f"ImportUser Received RPC exception: code={e.code()} message={e.details()}"
             )
             raise e
         else:
@@ -139,7 +139,7 @@ class CoLink:
             )
         except grpc.RpcError as e:
             logging.error(
-                f"CreateEntry Received RPC error: code={e.code()} message={e.details()}"
+                f"CreateEntry Received RPC exception: code={e.code()} message={e.details()}"
             )
             raise e
         else:
@@ -153,9 +153,6 @@ class CoLink:
                 metadata=get_jwt_auth(self.jwt),
             )
         except grpc.RpcError as e:
-            logging.warning(
-                f"ReadEntry Received RPC error: code={e.code()} message={e.details()}"
-            )
             pass
             return None
         else:
@@ -173,7 +170,7 @@ class CoLink:
             )
         except grpc.RpcError as e:
             logging.error(
-                f"Update Entry Received RPC error: code={e.code()} message={e.details()}"
+                f"Update Entry Received RPC exception: code={e.code()} message={e.details()}"
             )
             raise e
         else:
@@ -190,7 +187,7 @@ class CoLink:
             )
         except grpc.RpcError as e:
             logging.error(
-                f"DeleteEntry Received RPC error: code={e.code()} message={e.details()}"
+                f"DeleteEntry Received RPC exception: code={e.code()} message={e.details()}"
             )
             raise e
         else:
@@ -208,7 +205,7 @@ class CoLink:
             )
         except grpc.RpcError as e:
             logging.error(
-                f"RefreshToken Received RPC error: code={e.code()} message={e.details()}"
+                f"RefreshToken Received RPC exception: code={e.code()} message={e.details()}"
             )
             raise e
         else:
@@ -324,7 +321,7 @@ class CoLink:
             stub = CoLinkStub(channel)
         except grpc.RpcError as e:
             logging.error(
-                f"grpc connect Received RPC error: code={e.code()} message={e.details()}"
+                f"grpc connect Received RPC exception: code={e.code()} message={e.details()}"
             )
             raise e
         else:
