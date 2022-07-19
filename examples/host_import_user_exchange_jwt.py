@@ -22,6 +22,7 @@ if __name__ == "__main__":
         )
         jwt = cl.import_user(pub_key, signature_timestamp, expiration_timestamp, sig)
         users.append(jwt)
+    
     for i in range(num):
         for j in range(num):
             if i != j:

@@ -1,6 +1,6 @@
 import sys
 import logging
-import colink.colink_pb2 as colink_pb2
+from colink import StorageEntry, CoLinkInternalTaskIDList, SubscriptionMessage, Task
 from colink.sdk_a import CoLink, get_timestamp
 
 
@@ -14,7 +14,7 @@ if __name__ == "__main__":
     latest_key = "_internal:protocols:{}:waiting:latest".format(protocol_name)
     res = cl.read_entries(
         [
-            colink_pb2.StorageEntry(
+            StorageEntry(
                 key_name=list_key,
             )
         ]
@@ -22,7 +22,7 @@ if __name__ == "__main__":
     start_timestamp = 0
     if res is not None:
         list_entry = res[0]
-        list_ = colink_pb2.CoLinkInternalTaskIDList().FromString(
+        list_ = CoLinkInternalTaskIDList().FromString(
             list_entry.payload
         )  # parse colink proto struct from binary
         if len(list_.task_ids_with_key_paths) == 0:
@@ -38,18 +38,18 @@ if __name__ == "__main__":
     subscriber = cl.new_subscriber(queue_name)
     while True:
         data = subscriber.get_next()
-        message = colink_pb2.SubscriptionMessage().FromString(data)
+        message = SubscriptionMessage().FromString(data)
         if message.change_type != "delete":
-            task_id = colink_pb2.Task().FromString(message.payload)
+            task_id = Task().FromString(message.payload)
             res = cl.read_entries(
                 [
-                    colink_pb2.StorageEntry(
+                    StorageEntry(
                         key_name="_internal:tasks:{}".format(task_id.task_id),
                     )
                 ]
             )
             task_entry = res[0]
-            task = colink_pb2.Task().FromString(task_entry.payload)
+            task = Task().FromString(task_entry.payload)
             # IMPORTANT: you must check the status of the task received from the subscription.
             if task.status == "waiting":
                 cl.confirm_task(task_id.task_id, True, False, "")

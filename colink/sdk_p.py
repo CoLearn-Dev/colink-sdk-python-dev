@@ -7,7 +7,7 @@ import copy
 import logging
 from hashlib import sha256
 import concurrent.futures
-import colink.colink_pb2 as colink_pb2
+from colink import StorageEntry, CoLinkInternalTaskIDList, SubscriptionMessage, Task
 from colink.sdk_a import byte_to_str, str_to_byte, CoLink, get_timestamp
 
 
@@ -60,7 +60,7 @@ class CoLinkProtocol:
         )
         res = self.cl.read_entries(
             [
-                colink_pb2.StorageEntry(
+                StorageEntry(
                     key_name=operator_mq_key,
                 )
             ]
@@ -76,7 +76,7 @@ class CoLinkProtocol:
             )
             res = self.cl.read_entries(
                 [
-                    colink_pb2.StorageEntry(
+                    StorageEntry(
                         key_name=list_key,
                     )
                 ]
@@ -84,7 +84,7 @@ class CoLinkProtocol:
             start_timestamp = 0
             if res is not None:
                 list_entry = res[0]
-                lis = colink_pb2.CoLinkInternalTaskIDList.FromString(list_entry.payload)
+                lis = CoLinkInternalTaskIDList.FromString(list_entry.payload)
                 if len(lis.task_ids_with_key_paths) == 0:
                     start_timestamp = get_timestamp(list_entry.key_path)
                 else:
@@ -101,19 +101,19 @@ class CoLinkProtocol:
         channel = mq.channel()
         for method, properties, body in channel.consume(queue_name):
             data = body
-            message = colink_pb2.SubscriptionMessage.FromString(data)
+            message = SubscriptionMessage.FromString(data)
             if message.change_type != "delete":
-                task_id = colink_pb2.Task.FromString(message.payload)
+                task_id = Task.FromString(message.payload)
                 res = self.cl.read_entries(
                     [
-                        colink_pb2.StorageEntry(
+                        StorageEntry(
                             key_name="_internal:tasks:{}".format(task_id.task_id),
                         )
                     ]
                 )
                 if res is not None:
                     task_entry = res[0]
-                    task = colink_pb2.Task.FromString(task_entry.payload)
+                    task = Task.FromString(task_entry.payload)
                     if task.status == "started":
                         # begin user func
                         cl = self.cl
@@ -128,10 +128,10 @@ class CoLinkProtocol:
                             )
                             raise e
                         self.cl.finish_task(task.task_id)
-                        
+
                         logging.info("finnish task:%s", task.task_id)
                 else:
-                    
+
                     logging.error("Pull Task Error.")
             channel.basic_ack(method.delivery_tag)
 
@@ -156,5 +156,6 @@ def _cl_parse_args() -> CoLink:
     """
     return cl
 
+
 def _sha256(s):
-    return sha256(s.encode('utf-8')).hexdigest()
+    return sha256(s.encode("utf-8")).hexdigest()

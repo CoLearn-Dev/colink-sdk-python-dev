@@ -1,6 +1,6 @@
 import sys
 import logging
-import colink.colink_pb2 as colink_pb2
+from colink import Participant
 from colink.sdk_a import decode_jwt_without_validation, CoLink, str_to_byte
 
 if __name__ == "__main__":
@@ -11,14 +11,14 @@ if __name__ == "__main__":
     msg = "hello"
     user_id_initiator = decode_jwt_without_validation(jwt_initiator)
     participants = [
-        colink_pb2.Participant(
+        Participant(
             user_id=user_id_initiator.user_id,
             ptype="initiator",
         )
     ]
     for i in range(1, len(users)):
         participants.append(
-            colink_pb2.Participant(
+            Participant(
                 user_id=decode_jwt_without_validation(users[i]).user_id,
                 ptype="receiver",
             )

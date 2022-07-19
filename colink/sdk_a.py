@@ -7,8 +7,19 @@ import sys
 import pika
 import grpc
 import secp256k1
-import colink.colink_pb2_grpc as colink_pb2_grpc
-import colink.colink_pb2 as colink_pb2
+from colink import CoLinkStub
+from colink import (
+    Empty,
+    UserConsent,
+    StorageEntry,
+    StorageEntries,
+    RefreshTokenRequest,
+    Participant,
+    Task,
+    ConfirmTaskRequest,
+    Decision,SubscribeRequest, 
+    MQQueueName
+)
 
 
 class JWT:
@@ -50,7 +61,7 @@ class CoLink:
         client = self._grpc_connect(self.core_addr)
         try:
             response = client.RequestCoreInfo(
-                request=colink_pb2.Empty(),
+                request=Empty(),
                 metadata=get_jwt_auth(self.jwt),
             )
         except grpc.RpcError as e:
@@ -100,7 +111,7 @@ class CoLink:
         client = self._grpc_connect(self.core_addr)
         try:
             response = client.ImportUser(
-                request=colink_pb2.UserConsent(
+                request=UserConsent(
                     public_key=public_key_vec,
                     signature_timestamp=signature_timestamp,
                     expiration_timestamp=expiration_timestamp,
@@ -120,7 +131,7 @@ class CoLink:
         client = self._grpc_connect(self.core_addr)
         try:
             response = client.CreateEntry(
-                colink_pb2.StorageEntry(
+                StorageEntry(
                     key_name=key_name,
                     payload=payload,
                 ),
@@ -134,13 +145,11 @@ class CoLink:
         else:
             return response.key_path
 
-    def read_entries(
-        self, entries: List[colink_pb2.StorageEntry]
-    ) -> List[colink_pb2.StorageEntry]:
+    def read_entries(self, entries: List[StorageEntry]) -> List[StorageEntry]:
         client = self._grpc_connect(self.core_addr)
         try:
             response = client.ReadEntries(
-                colink_pb2.StorageEntries(entries=entries),
+                StorageEntries(entries=entries),
                 metadata=get_jwt_auth(self.jwt),
             )
         except grpc.RpcError as e:
@@ -156,7 +165,7 @@ class CoLink:
         client = self._grpc_connect(self.core_addr)
         try:
             response = client.UpdateEntry(
-                colink_pb2.StorageEntry(
+                StorageEntry(
                     key_name=key_name,
                     payload=payload,
                 ),
@@ -174,7 +183,7 @@ class CoLink:
         client = self._grpc_connect(self.core_addr)
         try:
             response = client.DeleteEntry(
-                colink_pb2.StorageEntry(
+                StorageEntry(
                     key_name=key_name,
                 ),
                 metadata=get_jwt_auth(self.jwt),
@@ -194,7 +203,7 @@ class CoLink:
         client = self._grpc_connect(self.core_addr)
         try:
             response = client.RefreshToken(
-                request=colink_pb2.RefreshTokenRequest(expiration_time=expiration_time),
+                request=RefreshTokenRequest(expiration_time=expiration_time),
                 metadata=get_jwt_auth(self.jwt),
             )
         except grpc.RpcError as e:
@@ -211,7 +220,7 @@ class CoLink:
         self,
         protocol_name: str,
         protocol_param: bytes,
-        participants: List[colink_pb2.Participant],
+        participants: List[Participant],
         require_agreement: bool,
     ) -> str:
         return self.run_task_with_expiration_time(
@@ -226,12 +235,12 @@ class CoLink:
         self,
         protocol_name: str,
         protocol_param: bytes,
-        participants: List[colink_pb2.Participant],
+        participants: List[Participant],
         require_agreement: bool,
         expiration_time: int,
     ) -> str:
         client = self._grpc_connect(self.core_addr)
-        task = colink_pb2.Task(
+        task = Task(
             protocol_name=protocol_name,
             protocol_param=protocol_param,
             participants=participants,
@@ -255,9 +264,9 @@ class CoLink:
     ):
         client = self._grpc_connect(self.core_addr)
         response = client.ConfirmTask(
-            request=colink_pb2.ConfirmTaskRequest(
+            request=ConfirmTaskRequest(
                 task_id=task_id,
-                decision=colink_pb2.Decision(
+                decision=Decision(
                     is_approved=is_approved, is_rejected=is_rejected, reason=reason
                 ),
             ),
@@ -267,7 +276,7 @@ class CoLink:
     def finish_task(self, task_id: str):
         client = self._grpc_connect(self.core_addr)
         response = client.FinishTask(
-            request=colink_pb2.Task(
+            request=Task(
                 task_id=task_id,
             ),
             metadata=get_jwt_auth(self.jwt),
@@ -278,7 +287,7 @@ class CoLink:
             start_timestamp = time.time_ns()
         client = self._grpc_connect(self.core_addr)
         response = client.Subscribe(
-            request=colink_pb2.SubscribeRequest(
+            request=SubscribeRequest(
                 key_name=key_name,
                 start_timestamp=start_timestamp,
             ),
@@ -289,7 +298,7 @@ class CoLink:
     def unsubscribe(self, queue_name: str):
         client = self._grpc_connect(self.core_addr)
         response = client.Unsubscribe(
-            colink_pb2.MqQueueName(
+            MQQueueName(
                 queue_name=queue_name,
             ),
             metadata=get_jwt_auth(self.jwt),
@@ -302,7 +311,7 @@ class CoLink:
 
     def _grpc_connect(
         self, addr: str
-    ) -> colink_pb2_grpc.CoLinkStub:  # give string addr, return grpc client object, currently non TLS
+    ) -> CoLinkStub:  # give string addr, return grpc client object, currently non TLS
         try:
             if self.ca_cert is None:
                 channel = grpc.insecure_channel(
@@ -312,7 +321,7 @@ class CoLink:
                 root_certs = open(self.ca_cert).read()
                 credentials = grpc.ssl_channel_credentials(root_certs)
                 channel = grpc.secure_channel(addr.replace("http://", ""), credentials)
-            stub = colink_pb2_grpc.CoLinkStub(channel)
+            stub = CoLinkStub(channel)
         except grpc.RpcError as e:
             logging.error(
                 f"grpc connect Received RPC error: code={e.code()} message={e.details()}"
