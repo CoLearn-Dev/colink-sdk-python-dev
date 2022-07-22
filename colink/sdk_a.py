@@ -374,7 +374,7 @@ def decode_jwt_without_validation(
             raise res
         else:
             jwt = JWT(
-                dic["role"], dic["user_id"], dic["exp"]
+                dic["privilege"], dic["user_id"], dic["exp"]
             )  # construct JWT from decoded result and return
             return jwt
 
