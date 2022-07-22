@@ -54,3 +54,4 @@ if __name__ == "__main__":
             if task.status == "waiting":
                 cl.confirm_task(task_id.task_id, True, False, "")
                 logging.info("confirm task", task_id.task_id)
+                

@@ -17,8 +17,9 @@ from colink import (
     Participant,
     Task,
     ConfirmTaskRequest,
-    Decision,SubscribeRequest, 
-    MQQueueName
+    Decision,
+    SubscribeRequest,
+    MQQueueName,
 )
 
 
@@ -415,3 +416,4 @@ def get_jwt_auth(
             jwt,
         )
     ]
+        

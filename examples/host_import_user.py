@@ -19,3 +19,4 @@ if __name__ == "__main__":
     )
     jwt = cl.import_user(pub_key, signature_timestamp, expiration_timestamp, sig)
     logging.info("import user success! (jwt): %s", jwt)
+    
