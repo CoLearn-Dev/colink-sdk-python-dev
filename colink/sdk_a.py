@@ -8,19 +8,7 @@ import pika
 import grpc
 import secp256k1
 from colink import CoLinkStub
-from colink import (
-    Empty,
-    UserConsent,
-    StorageEntry,
-    StorageEntries,
-    RefreshTokenRequest,
-    Participant,
-    Task,
-    ConfirmTaskRequest,
-    Decision,
-    SubscribeRequest,
-    MQQueueName,
-)
+import colink as cl
 
 
 class JWT:
@@ -62,7 +50,7 @@ class CoLink:
         client = self._grpc_connect(self.core_addr)
         try:
             response = client.RequestCoreInfo(
-                request=Empty(),
+                request=cl.Empty(),
                 metadata=get_jwt_auth(self.jwt),
             )
         except grpc.RpcError as e:
@@ -112,7 +100,7 @@ class CoLink:
         client = self._grpc_connect(self.core_addr)
         try:
             response = client.ImportUser(
-                request=UserConsent(
+                request=cl.UserConsent(
                     public_key=public_key_vec,
                     signature_timestamp=signature_timestamp,
                     expiration_timestamp=expiration_timestamp,
@@ -132,7 +120,7 @@ class CoLink:
         client = self._grpc_connect(self.core_addr)
         try:
             response = client.CreateEntry(
-                StorageEntry(
+                cl.StorageEntry(
                     key_name=key_name,
                     payload=payload,
                 ),
@@ -146,11 +134,11 @@ class CoLink:
         else:
             return response.key_path
 
-    def read_entries(self, entries: List[StorageEntry]) -> List[StorageEntry]:
+    def read_entries(self, entries: List[cl.StorageEntry]) -> List[cl.StorageEntry]:
         client = self._grpc_connect(self.core_addr)
         try:
             response = client.ReadEntries(
-                StorageEntries(entries=entries),
+                cl.StorageEntries(entries=entries),
                 metadata=get_jwt_auth(self.jwt),
             )
         except grpc.RpcError as e:
@@ -162,7 +150,7 @@ class CoLink:
         client = self._grpc_connect(self.core_addr)
         try:
             response = client.UpdateEntry(
-                StorageEntry(
+                cl.StorageEntry(
                     key_name=key_name,
                     payload=payload,
                 ),
@@ -180,7 +168,7 @@ class CoLink:
         client = self._grpc_connect(self.core_addr)
         try:
             response = client.DeleteEntry(
-                StorageEntry(
+                cl.StorageEntry(
                     key_name=key_name,
                 ),
                 metadata=get_jwt_auth(self.jwt),
@@ -200,7 +188,7 @@ class CoLink:
         client = self._grpc_connect(self.core_addr)
         try:
             response = client.RefreshToken(
-                request=RefreshTokenRequest(expiration_time=expiration_time),
+                request=cl.RefreshTokenRequest(expiration_time=expiration_time),
                 metadata=get_jwt_auth(self.jwt),
             )
         except grpc.RpcError as e:
@@ -217,7 +205,7 @@ class CoLink:
         self,
         protocol_name: str,
         protocol_param: bytes,
-        participants: List[Participant],
+        participants: List[cl.Participant],
         require_agreement: bool,
     ) -> str:
         return self.run_task_with_expiration_time(
@@ -232,12 +220,12 @@ class CoLink:
         self,
         protocol_name: str,
         protocol_param: bytes,
-        participants: List[Participant],
+        participants: List[cl.Participant],
         require_agreement: bool,
         expiration_time: int,
     ) -> str:
         client = self._grpc_connect(self.core_addr)
-        task = Task(
+        task = cl.Task(
             protocol_name=protocol_name,
             protocol_param=protocol_param,
             participants=participants,
@@ -261,9 +249,9 @@ class CoLink:
     ):
         client = self._grpc_connect(self.core_addr)
         response = client.ConfirmTask(
-            request=ConfirmTaskRequest(
+            request=cl.ConfirmTaskRequest(
                 task_id=task_id,
-                decision=Decision(
+                decision=cl.Decision(
                     is_approved=is_approved, is_rejected=is_rejected, reason=reason
                 ),
             ),
@@ -273,7 +261,7 @@ class CoLink:
     def finish_task(self, task_id: str):
         client = self._grpc_connect(self.core_addr)
         response = client.FinishTask(
-            request=Task(
+            request=cl.Task(
                 task_id=task_id,
             ),
             metadata=get_jwt_auth(self.jwt),
@@ -284,7 +272,7 @@ class CoLink:
             start_timestamp = time.time_ns()
         client = self._grpc_connect(self.core_addr)
         response = client.Subscribe(
-            request=SubscribeRequest(
+            request=cl.SubscribeRequest(
                 key_name=key_name,
                 start_timestamp=start_timestamp,
             ),
@@ -295,7 +283,7 @@ class CoLink:
     def unsubscribe(self, queue_name: str):
         client = self._grpc_connect(self.core_addr)
         response = client.Unsubscribe(
-            MQQueueName(
+            cl.MQQueueName(
                 queue_name=queue_name,
             ),
             metadata=get_jwt_auth(self.jwt),
