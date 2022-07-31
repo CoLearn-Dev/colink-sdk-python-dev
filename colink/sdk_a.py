@@ -154,7 +154,6 @@ class CoLink:
                 metadata=get_jwt_auth(self.jwt),
             )
         except grpc.RpcError as e:
-            pass
             return None
         else:
             return response.entries
