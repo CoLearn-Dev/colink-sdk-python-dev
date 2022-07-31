@@ -25,4 +25,3 @@ if __name__ == "__main__":
     new_jwt = cl.refresh_token()
     logging.info("old jwt %s", user_jwt)
     logging.info("new jwt %s", new_jwt)
-    

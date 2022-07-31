@@ -416,4 +416,3 @@ def get_jwt_auth(
             jwt,
         )
     ]
-        

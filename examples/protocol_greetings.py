@@ -23,4 +23,3 @@ def run_receiver(cl: CoLink, param: bytes, participants: List[Participant]):
 if __name__ == "__main__":
     logging.basicConfig(filename="protocol_greeting.log", filemode="a")
     pop.run()
-    

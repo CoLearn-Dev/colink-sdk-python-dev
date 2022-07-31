@@ -159,4 +159,3 @@ def _cl_parse_args() -> CoLink:
 
 def _sha256(s):
     return sha256(s.encode("utf-8")).hexdigest()
-                
