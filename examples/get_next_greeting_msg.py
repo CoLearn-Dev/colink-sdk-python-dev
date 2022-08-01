@@ -1,6 +1,6 @@
 import queue
 import sys
-from colink import StorageEntry, SubscriptionMessage, Task
+import colink as CL
 from colink.sdk_a import CoLink, byte_to_str
 
 if __name__ == "__main__":
@@ -12,12 +12,12 @@ if __name__ == "__main__":
     queue_name = cl.subscribe(latest_key, now)
     subscriber = cl.new_subscriber(queue_name)
     data = subscriber.get_next()
-    message = SubscriptionMessage().FromString(data)
+    message = CL.SubscriptionMessage().FromString(data)
     if message.change_type != "delete":
-        task_id = Task().FromString(message.payload)
+        task_id = CL.Task().FromString(message.payload)
         res = cl.read_entries(
             [
-                StorageEntry(
+                CL.StorageEntry(
                     key_name="tasks:{}:output".format(task_id.task_id),
                 )
             ]

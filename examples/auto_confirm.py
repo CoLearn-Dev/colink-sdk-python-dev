@@ -1,6 +1,6 @@
 import sys
 import logging
-import colink as cl
+import colink as CL
 from colink.sdk_a import CoLink, get_timestamp
 
 
@@ -9,12 +9,12 @@ if __name__ == "__main__":
     addr = sys.argv[1]
     jwt = sys.argv[2]
     protocol_name = sys.argv[3]
-    col = CoLink(addr, jwt)
+    cl = CoLink(addr, jwt)
     list_key = "_internal:protocols:{}:waiting".format(protocol_name)
     latest_key = "_internal:protocols:{}:waiting:latest".format(protocol_name)
-    res = col.read_entries(
+    res = cl.read_entries(
         [
-            cl.StorageEntry(
+            CL.StorageEntry(
                 key_name=list_key,
             )
         ]
@@ -22,7 +22,7 @@ if __name__ == "__main__":
     start_timestamp = 0
     if res is not None:
         list_entry = res[0]
-        list_ = cl.CoLinkInternalTaskIDList().FromString(
+        list_ = CL.CoLinkInternalTaskIDList().FromString(
             list_entry.payload
         )  # parse colink proto struct from binary
         if len(list_.task_ids_with_key_paths) == 0:
@@ -34,23 +34,23 @@ if __name__ == "__main__":
                     start_timestamp,
                     get_timestamp(list_.task_ids_with_key_paths[i].key_path),
                 )  # find earliest time stamp
-    queue_name = col.subscribe(latest_key, start_timestamp)
-    subscriber = col.new_subscriber(queue_name)
+    queue_name = cl.subscribe(latest_key, start_timestamp)
+    subscriber = cl.new_subscriber(queue_name)
     while True:
         data = subscriber.get_next()
-        message = cl.SubscriptionMessage().FromString(data)
+        message = CL.SubscriptionMessage().FromString(data)
         if message.change_type != "delete":
-            task_id = cl.Task().FromString(message.payload)
-            res = col.read_entries(
+            task_id = CL.Task().FromString(message.payload)
+            res = cl.read_entries(
                 [
-                    cl.StorageEntry(
+                    CL.StorageEntry(
                         key_name="_internal:tasks:{}".format(task_id.task_id),
                     )
                 ]
             )
             task_entry = res[0]
-            task = cl.Task().FromString(task_entry.payload)
+            task = CL.Task().FromString(task_entry.payload)
             # IMPORTANT: you must check the status of the task received from the subscription.
             if task.status == "waiting":
-                col.confirm_task(task_id.task_id, True, False, "")
+                cl.confirm_task(task_id.task_id, True, False, "")
                 logging.info("confirm task", task_id.task_id)

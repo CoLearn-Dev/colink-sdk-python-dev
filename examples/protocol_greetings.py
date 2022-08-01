@@ -1,7 +1,7 @@
 import sys
 import logging
 from typing import List
-from colink import Participant
+import colink as CL
 from colink.sdk_a import CoLink, byte_to_str
 from colink.sdk_p import ProtocolOperator
 
@@ -10,12 +10,12 @@ pop = ProtocolOperator(__name__)
 
 
 @pop.handle("greetings:initiator")
-def run_initiator(cl: CoLink, param: bytes, participants: List[Participant]):
+def run_initiator(cl: CoLink, param: bytes, participants: List[CL.Participant]):
     logging.info("initiator receive:%s", byte_to_str(param))
 
 
 @pop.handle("greetings:receiver")
-def run_receiver(cl: CoLink, param: bytes, participants: List[Participant]):
+def run_receiver(cl: CoLink, param: bytes, participants: List[CL.Participant]):
     logging.info("Receiver receive: {}", byte_to_str(param))
     cl.create_entry(("tasks:{}:output").format(cl.get_task_id()), param)
 

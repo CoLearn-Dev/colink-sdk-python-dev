@@ -7,7 +7,7 @@ import copy
 import logging
 from hashlib import sha256
 import concurrent.futures
-import colink as cl
+import colink as CL
 from colink.sdk_a import byte_to_str, str_to_byte, CoLink, get_timestamp
 
 
@@ -45,11 +45,11 @@ class CoLinkProtocol:
     def __init__(
         self,
         protocol_and_role: str,
-        col: CoLink,
+        cl: CoLink,
         user_func,
     ):
         self.protocol_and_role = protocol_and_role
-        self.cl = col
+        self.cl = cl
         self.user_func = user_func
 
     def start(self):
@@ -60,7 +60,7 @@ class CoLinkProtocol:
         )
         res = self.cl.read_entries(
             [
-                cl.StorageEntry(
+                CL.StorageEntry(
                     key_name=operator_mq_key,
                 )
             ]
@@ -76,7 +76,7 @@ class CoLinkProtocol:
             )
             res = self.cl.read_entries(
                 [
-                    cl.StorageEntry(
+                    CL.StorageEntry(
                         key_name=list_key,
                     )
                 ]
@@ -84,7 +84,7 @@ class CoLinkProtocol:
             start_timestamp = 0
             if res is not None:
                 list_entry = res[0]
-                lis = cl.CoLinkInternalTaskIDList.FromString(list_entry.payload)
+                lis = CL.CoLinkInternalTaskIDList.FromString(list_entry.payload)
                 if len(lis.task_ids_with_key_paths) == 0:
                     start_timestamp = get_timestamp(list_entry.key_path)
                 else:
@@ -101,25 +101,25 @@ class CoLinkProtocol:
         channel = mq.channel()
         for method, properties, body in channel.consume(queue_name):
             data = body
-            message = cl.SubscriptionMessage.FromString(data)
+            message = CL.SubscriptionMessage.FromString(data)
             if message.change_type != "delete":
-                task_id = cl.Task.FromString(message.payload)
+                task_id = CL.Task.FromString(message.payload)
                 res = self.cl.read_entries(
                     [
-                        cl.StorageEntry(
+                        CL.StorageEntry(
                             key_name="_internal:tasks:{}".format(task_id.task_id),
                         )
                     ]
                 )
                 if res is not None:
                     task_entry = res[0]
-                    task = cl.Task.FromString(task_entry.payload)
+                    task = CL.Task.FromString(task_entry.payload)
                     if task.status == "started":
                         # begin user func
-                        col = self.cl
-                        col.set_task_id(task.task_id)
+                        cl = self.cl
+                        cl.set_task_id(task.task_id)
                         try:
-                            self.user_func(col, task.protocol_param, task.participants)
+                            self.user_func(cl, task.protocol_param, task.participants)
                         except Exception as e:
                             logging.info(
                                 "ProtocolEntry start error: Task {}: {}.".format(

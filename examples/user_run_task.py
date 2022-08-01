@@ -1,7 +1,7 @@
 import sys
 import logging
 import os
-from colink import Participant
+import colink as CL
 from colink.sdk_a import decode_jwt_without_validation, CoLink, str_to_byte
 
 if __name__ == "__main__":
@@ -15,11 +15,11 @@ if __name__ == "__main__":
     user_id_a = decode_jwt_without_validation(jwt_a).user_id
     user_id_b = decode_jwt_without_validation(jwt_b).user_id
     participants = [
-        Participant(
+        CL.Participant(
             user_id=user_id_a,
             ptype="initiator",
         ),
-        Participant(
+        CL.Participant(
             user_id=user_id_b,
             ptype="receiver",
         ),
