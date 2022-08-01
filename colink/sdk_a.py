@@ -7,6 +7,7 @@ import sys
 import pika
 import grpc
 import secp256k1
+import copy
 from colink import CoLinkStub
 import colink as cl
 
@@ -87,7 +88,7 @@ class CoLink:
         if len(self.task_id) == 0:
             logging.error("task_id not found")
             return None
-        return self.task_id
+        return copy.deepcopy(self.task_id)
 
     def import_user(
         self,
