@@ -1,23 +1,23 @@
 import queue
 import sys
-import colink.colink_pb2 as colink_pb2
-from colink.sdk_a import Dds, byte_to_str
+import colink as CL
+from colink.sdk_a import CoLink, byte_to_str
 
 if __name__ == "__main__":
     addr = sys.argv[1]
     jwt = sys.argv[2]
     now = int(sys.argv[3])
-    dds = Dds(addr, jwt)
+    cl = CoLink(addr, jwt)
     latest_key = "_internal:protocols:greetings:finished:latest"
-    queue_name = dds.subscribe(latest_key, now)
-    subscriber = dds.new_subscriber(queue_name)
+    queue_name = cl.subscribe(latest_key, now)
+    subscriber = cl.new_subscriber(queue_name)
     data = subscriber.get_next()
-    message = colink_pb2.SubscriptionMessage().FromString(data)
+    message = CL.SubscriptionMessage().FromString(data)
     if message.change_type != "delete":
-        task_id = colink_pb2.Task().FromString(message.payload)
-        res = dds.read_entries(
+        task_id = CL.Task().FromString(message.payload)
+        res = cl.read_entries(
             [
-                colink_pb2.StorageEntry(
+                CL.StorageEntry(
                     key_name="tasks:{}:output".format(task_id.task_id),
                 )
             ]
