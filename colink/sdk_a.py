@@ -9,7 +9,7 @@ import grpc
 import secp256k1
 import copy
 from colink import CoLinkStub
-import colink as cl
+import colink as CL
 
 
 class JWT:
@@ -51,7 +51,7 @@ class CoLink:
         client = self._grpc_connect(self.core_addr)
         try:
             response = client.RequestCoreInfo(
-                request=cl.Empty(),
+                request=CL.Empty(),
                 metadata=get_jwt_auth(self.jwt),
             )
         except grpc.RpcError as e:
@@ -101,7 +101,7 @@ class CoLink:
         client = self._grpc_connect(self.core_addr)
         try:
             response = client.ImportUser(
-                request=cl.UserConsent(
+                request=CL.UserConsent(
                     public_key=public_key_vec,
                     signature_timestamp=signature_timestamp,
                     expiration_timestamp=expiration_timestamp,
@@ -121,7 +121,7 @@ class CoLink:
         client = self._grpc_connect(self.core_addr)
         try:
             response = client.CreateEntry(
-                cl.StorageEntry(
+                CL.StorageEntry(
                     key_name=key_name,
                     payload=payload,
                 ),
@@ -135,11 +135,11 @@ class CoLink:
         else:
             return response.key_path
 
-    def read_entries(self, entries: List[cl.StorageEntry]) -> List[cl.StorageEntry]:
+    def read_entries(self, entries: List[CL.StorageEntry]) -> List[CL.StorageEntry]:
         client = self._grpc_connect(self.core_addr)
         try:
             response = client.ReadEntries(
-                cl.StorageEntries(entries=entries),
+                CL.StorageEntries(entries=entries),
                 metadata=get_jwt_auth(self.jwt),
             )
         except grpc.RpcError as e:
@@ -151,7 +151,7 @@ class CoLink:
         client = self._grpc_connect(self.core_addr)
         try:
             response = client.UpdateEntry(
-                cl.StorageEntry(
+                CL.StorageEntry(
                     key_name=key_name,
                     payload=payload,
                 ),
@@ -169,7 +169,7 @@ class CoLink:
         client = self._grpc_connect(self.core_addr)
         try:
             response = client.DeleteEntry(
-                cl.StorageEntry(
+                CL.StorageEntry(
                     key_name=key_name,
                 ),
                 metadata=get_jwt_auth(self.jwt),
@@ -189,7 +189,7 @@ class CoLink:
         client = self._grpc_connect(self.core_addr)
         try:
             response = client.RefreshToken(
-                request=cl.RefreshTokenRequest(expiration_time=expiration_time),
+                request=CL.RefreshTokenRequest(expiration_time=expiration_time),
                 metadata=get_jwt_auth(self.jwt),
             )
         except grpc.RpcError as e:
@@ -206,7 +206,7 @@ class CoLink:
         self,
         protocol_name: str,
         protocol_param: bytes,
-        participants: List[cl.Participant],
+        participants: List[CL.Participant],
         require_agreement: bool,
     ) -> str:
         return self.run_task_with_expiration_time(
@@ -221,12 +221,12 @@ class CoLink:
         self,
         protocol_name: str,
         protocol_param: bytes,
-        participants: List[cl.Participant],
+        participants: List[CL.Participant],
         require_agreement: bool,
         expiration_time: int,
     ) -> str:
         client = self._grpc_connect(self.core_addr)
-        task = cl.Task(
+        task = CL.Task(
             protocol_name=protocol_name,
             protocol_param=protocol_param,
             participants=participants,
@@ -250,9 +250,9 @@ class CoLink:
     ):
         client = self._grpc_connect(self.core_addr)
         response = client.ConfirmTask(
-            request=cl.ConfirmTaskRequest(
+            request=CL.ConfirmTaskRequest(
                 task_id=task_id,
-                decision=cl.Decision(
+                decision=CL.Decision(
                     is_approved=is_approved, is_rejected=is_rejected, reason=reason
                 ),
             ),
@@ -262,7 +262,7 @@ class CoLink:
     def finish_task(self, task_id: str):
         client = self._grpc_connect(self.core_addr)
         response = client.FinishTask(
-            request=cl.Task(
+            request=CL.Task(
                 task_id=task_id,
             ),
             metadata=get_jwt_auth(self.jwt),
@@ -273,7 +273,7 @@ class CoLink:
             start_timestamp = time.time_ns()
         client = self._grpc_connect(self.core_addr)
         response = client.Subscribe(
-            request=cl.SubscribeRequest(
+            request=CL.SubscribeRequest(
                 key_name=key_name,
                 start_timestamp=start_timestamp,
             ),
@@ -284,7 +284,7 @@ class CoLink:
     def unsubscribe(self, queue_name: str):
         client = self._grpc_connect(self.core_addr)
         response = client.Unsubscribe(
-            cl.MQQueueName(
+            CL.MQQueueName(
                 queue_name=queue_name,
             ),
             metadata=get_jwt_auth(self.jwt),
@@ -315,6 +315,34 @@ class CoLink:
             raise e
         else:
             return stub
+
+    def read_entry(self, key: str) -> bytes:
+        if "::" in key:
+            storage_entry=CL.StorageEntry(key_path=key)
+        else:
+            storage_entry=CL.StorageEntry(key_name=key)
+        res = self.read_entries([storage_entry])
+        if res is None:
+            return None
+        else:
+            return copy.deepcopy(res[0].payload)
+    
+    def read_or_wait(self, key: str) -> bytes:
+        res=self.read_entry(key)
+        if res is not None:
+            return res
+        else:
+            queue_name = self.subscribe(key, None)
+            mut_subscriber = self.new_subscriber(queue_name)
+            data = mut_subscriber.get_next()
+            logging.info("Received [{}]".format(data))
+            self.unsubscribe(queue_name)
+            message = CL.SubscriptionMessage().FromString(data)
+            if message.change_type != "delete" :
+                return message.payload
+            else:
+                logging.warning('Subscribe {} got delete event'.format(key))
+                return None
 
 
 def generate_user() -> Tuple[

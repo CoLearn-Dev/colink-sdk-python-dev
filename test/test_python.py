@@ -177,10 +177,9 @@ def run_protocol_greeting(addr: str, jwt: str):
 
 def get_next_greeting_message(addr: str, jwt: str, now: int):
     res = subprocess.run(
-        ["python3", "examples/get_next_greeting_msg.py", addr, jwt, str(now)],
-        capture_output=True,
-        check=True,
-    )
+            ["python3", "examples/get_next_greeting_msg.py", addr, jwt, str(now)],
+            capture_output=True,
+            check=True,)
     return res.stdout
 
 

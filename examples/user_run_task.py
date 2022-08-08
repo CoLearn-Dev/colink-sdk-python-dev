@@ -17,11 +17,11 @@ if __name__ == "__main__":
     participants = [
         CL.Participant(
             user_id=user_id_a,
-            ptype="initiator",
+            role="initiator",
         ),
         CL.Participant(
             user_id=user_id_b,
-            ptype="receiver",
+            role="receiver",
         ),
     ]
     cl = CoLink(addr, jwt_a)

@@ -15,6 +15,15 @@ grpc_tools.protoc.main(
         "./proto/colink.proto",
     ]
 )
+grpc_tools.protoc.main(
+    [
+        "grpc_tools.protoc",
+        "-I./proto",
+        "--python_out=./colink",
+        "--grpc_python_out=./colink",
+        "./proto/colink_remote_storage.proto",
+    ]
+)
 
 
 def update_import_path_in_pb2_grpc():
@@ -30,7 +39,7 @@ def update_import_path_in_pb2_grpc():
 update_import_path_in_pb2_grpc()
 setup(
     name="colink",
-    version="0.1.6",
+    version="0.1.7",
     description="colink python module",
     author="Wenjie Qu",
     author_email="",

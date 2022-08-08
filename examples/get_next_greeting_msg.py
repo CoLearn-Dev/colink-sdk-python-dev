@@ -9,16 +9,13 @@ if __name__ == "__main__":
     now = int(sys.argv[3])
     cl = CoLink(addr, jwt)
     latest_key = "_internal:protocols:greetings:finished:latest"
-    queue_name = cl.subscribe(latest_key, now)
-    subscriber = cl.new_subscriber(queue_name)
-    data = subscriber.get_next()
-    message = CL.SubscriptionMessage().FromString(data)
-    if message.change_type != "delete":
-        task_id = CL.Task().FromString(message.payload)
+    message=cl.read_or_wait(latest_key)
+    if message!= None:
+        task = CL.Task().FromString(message)
         res = cl.read_entries(
             [
                 CL.StorageEntry(
-                    key_name="tasks:{}:output".format(task_id.task_id),
+                    key_name="tasks:{}:output".format(task.task_id),
                 )
             ]
         )
