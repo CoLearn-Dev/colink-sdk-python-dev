@@ -9,8 +9,8 @@ if __name__ == "__main__":
     now = int(sys.argv[3])
     cl = CoLink(addr, jwt)
     latest_key = "_internal:protocols:greetings:finished:latest"
-    message=cl.read_or_wait(latest_key)
-    if message!= None:
+    message = cl.read_or_wait(latest_key)
+    if message != None:
         task = CL.Task().FromString(message)
         res = cl.read_entries(
             [

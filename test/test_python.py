@@ -27,17 +27,17 @@ def run_greetings(port: int, user_num: int):
             raise AssertionError(
                 "listen {}:{}: address already in use.".format(CORE_ADDR, port)
             )
-        if os.path.exists("./colink-server/host_token.txt"):
-            os.remove("./colink-server/host_token.txt")
+        if os.path.exists("./colink-server-dev/host_token.txt"):
+            os.remove("./colink-server-dev/host_token.txt")
         child_processes.append(start_core(port, []))
         while True:
             if (
-                os.path.exists("./colink-server/host_token.txt")
+                os.path.exists("./colink-server-dev/host_token.txt")
                 and socket.socket().connect_ex((CORE_ADDR, port)) == 0
             ):
                 break
             time.sleep(0.1)
-        with open("./colink-server/host_token.txt", "r") as f:
+        with open("./colink-server-dev/host_token.txt", "r") as f:
             host_token = f.read()
         users = host_import_users_and_exchange_guest_jwts(addr, host_token, user_num)
         assert len(users) == user_num
@@ -46,12 +46,10 @@ def run_greetings(port: int, user_num: int):
         msg = str(random_number)
         threads = []  # thread pool
         if user_num == 2:
-            print('user ru  task')
             threads.append(
                 thread_pool.submit(user_run_task, addr, users[0], users[1], msg)
             )
         else:
-            print('user greeting to multiple')
             threads.append(
                 thread_pool.submit(user_greetings_to_multiple_users, addr, users)
             )
@@ -59,9 +57,13 @@ def run_greetings(port: int, user_num: int):
             threads.append(
                 thread_pool.submit(run_auto_confirm, addr, users[i], "greetings")
             )
+            threads.append(
+                thread_pool.submit(run_auto_confirm, addr, users[i], "remote_storage.create")
+            )
         for user in users:
             num = random.randrange(1, 2)
             for _ in range(num):
+                threads.append(thread_pool.submit(remote_storage, addr, user))
                 threads.append(thread_pool.submit(run_protocol_greeting, addr, user))
         for th in threads:
             child_processes.append(th.result())
@@ -101,11 +103,27 @@ def start_core(port, param=[]):
             MQ_PREFIX,
             *param,
         ],
-        cwd="./colink-server",
+        cwd="./colink-server-dev",
         stdout=DEVNULL,
         stderr=DEVNULL,
     )
 
+
+def remote_storage(addr,jwt):
+    return subprocess.Popen(
+        [
+            "cargo",
+            "run",
+            "--",
+            "--addr",
+            addr,
+            "--jwt",
+            jwt,
+        ],
+        cwd="./colink-protocol-remote-storage-dev",
+        stdout=sys.stdout,
+        stderr=DEVNULL,
+    )
 
 def host_import_users_and_exchange_guest_jwts(
     addr: str, jwt: str, user_num: int
@@ -144,7 +162,7 @@ def user_run_task(addr: str, jwt_a: str, jwt_b: str, msg: str):
 def user_greetings_to_multiple_users(addr: str, users: List[str]):
     time.sleep(random.randrange(0, 1000) / 1000)
     return subprocess.Popen(
-        ["python3",  "examples/user_greetings_to_multiple_users.py", addr, *users],
+        ["python3", "examples/user_greetings_to_multiple_users.py", addr, *users],
         stdout=DEVNULL,
         stderr=sys.stdout,
     )
@@ -177,9 +195,10 @@ def run_protocol_greeting(addr: str, jwt: str):
 
 def get_next_greeting_message(addr: str, jwt: str, now: int):
     res = subprocess.run(
-            ["python3", "examples/get_next_greeting_msg.py", addr, jwt, str(now)],
-            capture_output=True,
-            check=True,)
+        ["python3", "examples/get_next_greeting_msg.py", addr, jwt, str(now)],
+        capture_output=True,
+        check=True,
+    )
     return res.stdout
 
 
@@ -189,5 +208,7 @@ def test_example_protocol_greetings():
     )
     for i in range(0, 11):
         run_greetings(12300 + i, USER_NUM[i])
-if __name__=='__main__':
+
+
+if __name__ == "__main__":
     test_example_protocol_greetings()

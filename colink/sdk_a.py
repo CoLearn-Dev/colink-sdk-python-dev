@@ -318,17 +318,17 @@ class CoLink:
 
     def read_entry(self, key: str) -> bytes:
         if "::" in key:
-            storage_entry=CL.StorageEntry(key_path=key)
+            storage_entry = CL.StorageEntry(key_path=key)
         else:
-            storage_entry=CL.StorageEntry(key_name=key)
+            storage_entry = CL.StorageEntry(key_name=key)
         res = self.read_entries([storage_entry])
         if res is None:
             return None
         else:
             return copy.deepcopy(res[0].payload)
-    
+
     def read_or_wait(self, key: str) -> bytes:
-        res=self.read_entry(key)
+        res = self.read_entry(key)
         if res is not None:
             return res
         else:
@@ -338,11 +338,53 @@ class CoLink:
             logging.info("Received [{}]".format(data))
             self.unsubscribe(queue_name)
             message = CL.SubscriptionMessage().FromString(data)
-            if message.change_type != "delete" :
+            if message.change_type != "delete":
                 return message.payload
             else:
-                logging.warning('Subscribe {} got delete event'.format(key))
+                logging.warning("Subscribe {} got delete event".format(key))
                 return None
+
+    def get_user_id(self) -> str:
+        auth_content = decode_jwt_without_validation(self.jwt)
+        return auth_content.user_id
+
+    def set_variable(self, key: str, payload: bytes, receivers: List[CL.Participant]):
+        
+        if self.task_id is None:
+            logging.error("set_variable task_id not found")
+        new_participants = [
+            CL.Participant(user_id=self.get_user_id(), role="requester")
+        ]
+        for p in receivers:
+            if p.user_id == self.get_user_id():
+                self.create_entry(
+                    "_remote_storage:private:{}:_variable_transfer:{}:{}".format(
+                        p.user_id, self.get_task_id(), key
+                    ),
+                    payload,
+                )
+            else:
+                new_participants.append(
+                    CL.Participant(
+                        user_id=copy.deepcopy(p.user_id),
+                        role="provider",
+                    )
+                )
+        params = CL.CreateParams(
+            remote_key_name="_variable_transfer:{}:{}".format(self.get_task_id(), key),
+            payload=payload,
+        )
+        payload = params.SerializeToString()
+        self.run_task("remote_storage.create", payload, new_participants, False)
+
+    def get_variable(self, key: str, sender: CL.Participant) -> bytes:
+        if self.task_id is None:
+            logging.error("get_variable task_id not found")
+        key = "_remote_storage:private:{}:_variable_transfer:{}:{}".format(
+            sender.user_id, self.get_task_id(), key
+        )
+        res = self.read_or_wait(key)
+        return res
 
 
 def generate_user() -> Tuple[
