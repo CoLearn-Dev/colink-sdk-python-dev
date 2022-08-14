@@ -325,7 +325,7 @@ class CoLink:
         if res is None:
             return None
         else:
-            return copy.deepcopy(res[0].payload)
+            return res[0].payload
 
     def read_or_wait(self, key: str) -> bytes:
         res = self.read_entry(key)
@@ -366,7 +366,7 @@ class CoLink:
             else:
                 new_participants.append(
                     CL.Participant(
-                        user_id=copy.deepcopy(p.user_id),
+                        user_id=p.user_id,
                         role="provider",
                     )
                 )
