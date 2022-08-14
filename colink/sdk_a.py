@@ -349,7 +349,6 @@ class CoLink:
         return auth_content.user_id
 
     def set_variable(self, key: str, payload: bytes, receivers: List[CL.Participant]):
-
         if self.task_id is None:
             logging.error("set_variable task_id not found")
         new_participants = [
