@@ -13,14 +13,14 @@ if __name__ == "__main__":
     participants = [
         CL.Participant(
             user_id=user_id_initiator.user_id,
-            ptype="initiator",
+            role="initiator",
         )
     ]
     for i in range(1, len(users)):
         participants.append(
             CL.Participant(
                 user_id=decode_jwt_without_validation(users[i]).user_id,
-                ptype="receiver",
+                role="receiver",
             )
         )
     cl = CoLink(addr, jwt_initiator)

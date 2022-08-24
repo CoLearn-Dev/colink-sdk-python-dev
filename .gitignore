@@ -7,6 +7,8 @@ colink.egg-info/
 build/
 colink_pb2.py
 colink_pb2_grpc.py
+colink_remote_storage_pb2.py
+colink_remote_storage_pb2_grpc.py
 *.log
 /target
 /.idea
