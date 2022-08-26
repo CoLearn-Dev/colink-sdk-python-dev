@@ -6,25 +6,20 @@ import os
 pip.main(["install", "grpcio-tools==1.45.0"])
 import grpc_tools.protoc
 
-grpc_tools.protoc.main(
-    [
-        "grpc_tools.protoc",
-        "-I./proto",
-        "--python_out=./colink",
-        "--grpc_python_out=./colink",
-        "./proto/colink.proto",
-    ]
-)
-grpc_tools.protoc.main(
-    [
-        "grpc_tools.protoc",
-        "-I./proto",
-        "--python_out=./colink",
-        "--grpc_python_out=./colink",
-        "./proto/colink_remote_storage.proto",
-    ]
-)
 
+def generate_grpc_template(proto_file, proto_dir="./proto", python_out="./colink", grpc_out="./colink"):
+    grpc_tools.protoc.main(
+        [
+            "grpc_tools.protoc",
+            "-I{}".format(proto_dir),
+            "--python_out={}".format(python_out),
+            "--grpc_python_out={}".format(grpc_out),
+            "{}/{}".format(proto_dir, proto_file),
+        ]
+    )
+
+generate_grpc_template('colink.proto')
+generate_grpc_template('colink_remote_storage.proto')
 
 def update_import_path_in_pb2_grpc():
     with open("./colink/colink_pb2_grpc.py", "r") as f:
@@ -39,7 +34,7 @@ def update_import_path_in_pb2_grpc():
 update_import_path_in_pb2_grpc()
 setup(
     name="colink",
-    version="0.1.7",
+    version="0.1.8",
     description="colink python module",
     author="Wenjie Qu",
     author_email="",
