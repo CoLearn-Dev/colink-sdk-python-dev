@@ -20,6 +20,8 @@ def generate_grpc_template(proto_file, proto_dir="./proto", python_out="./colink
 
 generate_grpc_template('colink.proto')
 generate_grpc_template('colink_remote_storage.proto')
+generate_grpc_template('colink_policy_module.proto')
+generate_grpc_template('colink_registry.proto')
 
 def update_import_path_in_pb2_grpc():
     with open("./colink/colink_pb2_grpc.py", "r") as f:
@@ -42,5 +44,6 @@ setup(
     install_requires=[
         "secp256k1==0.14.0",
         "pika==1.2.0",
+        "protobuf==3.15.8",
     ],  # external packages as dependencies
 )
