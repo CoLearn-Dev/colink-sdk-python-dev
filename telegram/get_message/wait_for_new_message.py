@@ -7,6 +7,4 @@ if __name__ == "__main__":
     addr = sys.argv[1]
     jwt = sys.argv[2]
     cl = CoLink(addr, jwt)
-    latest_key = "_internal:protocols:telegram/send_msg:finished:latest"
-    message = cl.read_or_wait(latest_key)
-    
+    message = cl.read_or_wait("telegram_message")
