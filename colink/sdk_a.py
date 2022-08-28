@@ -238,7 +238,7 @@ class CoLink:
             request=task,
             metadata=get_jwt_auth(self.jwt),
         )
-        logging.info("create task", response.task_id)
+        logging.info("create task {}".format(response.task_id))
         return response.task_id
 
     def confirm_task(
