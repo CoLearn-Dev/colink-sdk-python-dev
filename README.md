@@ -31,7 +31,9 @@ python3 examples/get_next_greeting_message.py <address> <user_jwt>
 ```
 python3 examples/protocol_greetings.py --addr <address> --jwt <user_jwt> 
 ```
-
+```
+python3 examples/user_remote_storage.py <address> <user_jwt A> <user_jwt B> <message> # <message> is optional
+```
 ## Test
 
 ```
