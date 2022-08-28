@@ -7,6 +7,7 @@ import sys
 import pika
 import grpc
 import secp256k1
+import random
 import copy
 from colink import CoLinkStub
 import colink as CL
@@ -17,6 +18,12 @@ class JWT:
         self.role = role
         self.user_id = user_id
         self.exp = exp
+
+
+class CoLinkLockToken:
+    def __init__(self, key: str, rnd_num: int):
+        self.key = key
+        self.rnd_num = rnd_num
 
 
 class CoLinkSubscriber:
@@ -131,7 +138,7 @@ class CoLink:
             logging.error(
                 f"CreateEntry Received RPC exception: code={e.code()} message={e.details()}"
             )
-            raise e
+            return None
         else:
             return response.key_path
 
@@ -491,6 +498,50 @@ class CoLink:
         )
         payload = params.SerializeToString()
         self.run_task("remote_storage.delete", payload, participants, False)
+
+    def update_registries(self, registries: CL.Registries):
+        participants = [
+            CL.Participant(
+                user_id=self.get_user_id(),
+                role="update_registries",
+            )
+        ]
+        payload = registries.SerializeToString()
+        self.run_task("registry", payload, participants, False)
+
+    def lock(self, key: str) -> CoLinkLockToken:
+        return self.lock_with_retry_time(key, 100)
+
+    def lock_with_retry_time(
+        self,
+        key: str,
+        retry_time_cap_in_ms: int,
+    ) -> CoLinkLockToken:
+        sleep_time_cap = 1
+        rnd_num = random.getrandbits(32)
+        while True:
+            payload = rnd_num.to_bytes(length=32, byteorder="little", signed=False)
+            if self.create_entry("_lock:{}".format(key), payload) is not None:
+                break
+            st = random.randint(0, sleep_time_cap - 1)
+            time.sleep(st / 1000)  # st is in milli-second
+            sleep_time_cap *= 2
+            if sleep_time_cap > retry_time_cap_in_ms:
+                sleep_time_cap = retry_time_cap_in_ms
+        return CoLinkLockToken(
+            key=key,
+            rnd_num=rnd_num,
+        )
+
+    def unlock(self, lock_token: CoLinkLockToken):
+        rnd_num_in_storage = self.read_entry("_lock:{}".format(lock_token.key))
+        rnd_num_in_storage = int().from_bytes(
+            rnd_num_in_storage, byteorder="little", signed=False
+        )
+        if rnd_num_in_storage == lock_token.rnd_num:
+            self.delete_entry("_lock:{}".format(lock_token.key))
+        else:
+            logging.error("Invalid token.")
 
 
 def generate_user() -> Tuple[
