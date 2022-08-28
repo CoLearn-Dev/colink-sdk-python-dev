@@ -385,6 +385,13 @@ class CoLink:
         res = self.read_or_wait(key)
         return res
 
+    def get_participant_id(self, participants: List[CL.Participant]) -> int:
+        for i, participant in enumerate(participants):
+            if participant.user_id == self.get_user_id():
+                return i
+        return None
+    
+    
 
 def generate_user() -> Tuple[
     secp256k1.PublicKey, secp256k1.PrivateKey
