@@ -50,5 +50,4 @@ pytest test/test_python.py
 
 ## Release
 In order to handle server creation, remote storage management, user creation...etc more conveniently, 
-download ColinkCTL [here](https://github.com/CoLearn-Dev/colinkctl).
-
+download ColinkCTL [here](https://github.com/CoLearn-Dev/colinkctl/releases).
