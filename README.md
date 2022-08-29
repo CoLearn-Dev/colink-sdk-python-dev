@@ -45,3 +45,8 @@ pip3 install pytest
 bash pull-and-build-server.sh
 pytest test/test_python.py
 ```
+
+## Release
+In order to handle server creation, remote storage management, user creation...etc more conveniently, 
+download ColinkCTL [here](https://github.com/CoLearn-Dev/colinkctl).
+
