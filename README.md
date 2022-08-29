@@ -1,8 +1,6 @@
 # CoLink Python SDK for Application
 CoLink Python SDK  provides a Python3 language support toolkit for application developers which allows them to update storage, manage computation requests, and monitor CoLink server status.
 
-
-
 ## Requirements
 
 - Python 3.9
@@ -16,6 +14,10 @@ python3 examples/host_import_user.py
 ```
 python3 examples/host_import_user_exchange_jwt.py <address> <host_jwt> <number> 
 ```
+```
+python3 examples/host_import_users_and_set_registry.py <address> <host_jwt> <number>
+```
+
 ```
 python3 examples/user_run_task.py <address> <user_jwt A> <user_jwt B> <message> # <message> is optional
 ```
