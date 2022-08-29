@@ -138,7 +138,7 @@ class CoLink:
             logging.error(
                 f"CreateEntry Received RPC exception: code={e.code()} message={e.details()}"
             )
-            return None
+            raise e
         else:
             return response.key_path
 
@@ -521,7 +521,11 @@ class CoLink:
         rnd_num = random.getrandbits(32)
         while True:
             payload = rnd_num.to_bytes(length=32, byteorder="little", signed=False)
-            if self.create_entry("_lock:{}".format(key), payload) is not None:
+            try:
+                ret=self.create_entry("_lock:{}".format(key), payload)
+            except grpc.RpcError as e:
+                pass
+            else:
                 break
             st = random.randint(0, sleep_time_cap - 1)
             time.sleep(st / 1000)  # st is in milli-second
