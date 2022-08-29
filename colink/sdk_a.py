@@ -7,6 +7,7 @@ import sys
 import pika
 import grpc
 import secp256k1
+import random
 import copy
 from colink import CoLinkStub
 import colink as CL
@@ -116,6 +117,26 @@ class CoLink:
             raise e
         else:
             return response.jwt
+
+    def generate_token(self, privilege: str) -> str:
+        return self.generate_token_with_expiration_time(
+            get_time_stamp() + 86400, privilege
+        )
+
+    def generate_token_with_expiration_time(
+        self,
+        expiration_time: int,
+        privilege: str,
+    ) -> str:
+        client = self._grpc_connect(self.core_addr)
+        response = client.GenerateToken(
+            request=CL.GenerateTokenRequest(
+                expiration_time=expiration_time,
+                privilege=privilege,
+            ),
+            metadata=get_jwt_auth(self.jwt),
+        )
+        return response.jwt
 
     def create_entry(self, key_name: str, payload: bytes) -> str:
         client = self._grpc_connect(self.core_addr)
@@ -238,7 +259,7 @@ class CoLink:
             request=task,
             metadata=get_jwt_auth(self.jwt),
         )
-        logging.info("create task", response.task_id)
+        logging.info("create task {}".format(response.task_id))
         return response.task_id
 
     def confirm_task(
@@ -390,6 +411,154 @@ class CoLink:
             if participant.user_id == self.get_user_id():
                 return i
         return None
+
+    def remote_storage_create(
+        self,
+        providers: List[str],
+        key: str,
+        payload: bytes,
+        is_public: bool,
+    ):
+        participants = [
+            CL.Participant(
+                user_id=self.get_user_id(),
+                role="requester",
+            )
+        ]
+        for provider in providers:
+            participants.append(
+                CL.Participant(
+                    user_id=provider,
+                    role="provider",
+                )
+            )
+        params = CL.CreateParams(
+            remote_key_name=key, payload=payload, is_public=is_public
+        )
+        payload = params.SerializeToString()
+
+        self.run_task("remote_storage.create", payload, participants, False)
+
+    def remote_storage_read(
+        self,
+        provider: str,
+        key: str,
+        is_public: bool,
+        holder_id: str,
+    ) -> bytes:
+        participants = [
+            CL.Participant(
+                user_id=self.get_user_id(),
+                role="requester",
+            ),
+            CL.Participant(user_id=provider, role="provider"),
+        ]
+        params = CL.ReadParams(
+            remote_key_name=key, is_public=is_public, holder_id=holder_id
+        )
+        payload = params.SerializeToString()
+        task_id = self.run_task("remote_storage.read", payload, participants, False)
+        status = self.read_or_wait("tasks:{}:status".format(task_id))
+        if status[0] == 0:
+            data = self.read_or_wait("tasks:{}:output".format(task_id))
+            return data
+        else:
+            logging.error("remote_storage.read: status_code: {}".format(status[0]))
+            return None
+
+    def remote_storage_update(
+        self,
+        providers: List[str],
+        key: str,
+        payload: bytes,
+        is_public: bool,
+    ):
+        participants = [
+            CL.Participant(
+                user_id=self.get_user_id(),
+                role="requester",
+            )
+        ]
+        for provider in providers:
+            participants.append(CL.Participant(user_id=provider, role="provider"))
+        params = CL.UpdateParams(
+            remote_key_name=key, payload=payload, is_public=is_public
+        )
+        payload = params.SerializeToString()
+        self.run_task("remote_storage.update", payload, participants, False)
+
+    def remote_storage_delete(
+        self,
+        providers: List[str],
+        key: str,
+        is_public: bool,
+    ):
+        participants = [
+            CL.Participant(
+                user_id=self.get_user_id(),
+                role="requester",
+            )
+        ]
+        for provider in providers:
+            participants.append(
+                CL.Participant(
+                    user_id=provider,
+                    role="provider",
+                )
+            )
+        params = CL.DeleteParams(
+            remote_key_name=key,
+            is_public=is_public,
+        )
+        payload = params.SerializeToString()
+        self.run_task("remote_storage.delete", payload, participants, False)
+
+    def update_registries(self, registries: CL.Registries):
+        participants = [
+            CL.Participant(
+                user_id=self.get_user_id(),
+                role="update_registries",
+            )
+        ]
+        payload = registries.SerializeToString()
+        self.run_task("registry", payload, participants, False)
+
+    def lock(self, key: str) -> Tuple[str, int]:
+        return self.lock_with_retry_time(key, 100)
+
+    def lock_with_retry_time(
+        self,
+        key: str,
+        retry_time_cap_in_ms: int,
+    ) -> Tuple[str, int]:
+        sleep_time_cap = 1
+        rnd_num = random.getrandbits(32)
+        while True:
+            payload = rnd_num.to_bytes(length=32, byteorder="little", signed=False)
+            try:
+                ret = self.create_entry("_lock:{}".format(key), payload)
+            except grpc.RpcError as e:
+                pass
+            else:
+                break
+            st = random.randint(0, sleep_time_cap - 1)
+            time.sleep(st / 1000)  # st is in milli-second
+            sleep_time_cap *= 2
+            if sleep_time_cap > retry_time_cap_in_ms:
+                sleep_time_cap = retry_time_cap_in_ms
+        return (key, rnd_num)
+
+    def unlock(self, lock_token: Tuple[str, int]):
+        key, rnd_num = lock_token
+        rnd_num_in_storage = self.read_entry("_lock:{}".format(key))
+        rnd_num_in_storage = int().from_bytes(
+            rnd_num_in_storage, byteorder="little", signed=False
+        )
+        if rnd_num_in_storage == rnd_num:
+            self.delete_entry("_lock:{}".format(key))
+        else:
+            logging.error("Invalid token.")
+
 
 def generate_user() -> Tuple[
     secp256k1.PublicKey, secp256k1.PrivateKey
