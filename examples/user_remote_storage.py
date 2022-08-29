@@ -64,4 +64,3 @@ if __name__ == "__main__":
         print("Deleted")
     else:
         logging.error("Receive non-delete change_type.")
-
