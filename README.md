@@ -17,7 +17,6 @@ python3 examples/host_import_user_exchange_jwt.py <address> <host_jwt> <number>
 ```
 python3 examples/host_import_users_and_set_registry.py <address> <host_jwt> <number>
 ```
-
 ```
 python3 examples/user_run_task.py <address> <user_jwt A> <user_jwt B> <message> # <message> is optional
 ```
