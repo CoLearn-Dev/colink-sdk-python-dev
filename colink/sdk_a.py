@@ -20,12 +20,6 @@ class JWT:
         self.exp = exp
 
 
-class CoLinkLockToken:
-    def __init__(self, key: str, rnd_num: int):
-        self.key = key
-        self.rnd_num = rnd_num
-
-
 class CoLinkSubscriber:
     def __init__(self, mq_uri: str, queue_name: str):
         self.uri = mq_uri
@@ -509,20 +503,20 @@ class CoLink:
         payload = registries.SerializeToString()
         self.run_task("registry", payload, participants, False)
 
-    def lock(self, key: str) -> CoLinkLockToken:
+    def lock(self, key: str) -> Tuple[str, int]:
         return self.lock_with_retry_time(key, 100)
 
     def lock_with_retry_time(
         self,
         key: str,
         retry_time_cap_in_ms: int,
-    ) -> CoLinkLockToken:
+    ) -> Tuple[str, int]:
         sleep_time_cap = 1
         rnd_num = random.getrandbits(32)
         while True:
             payload = rnd_num.to_bytes(length=32, byteorder="little", signed=False)
             try:
-                ret=self.create_entry("_lock:{}".format(key), payload)
+                ret = self.create_entry("_lock:{}".format(key), payload)
             except grpc.RpcError as e:
                 pass
             else:
@@ -532,20 +526,19 @@ class CoLink:
             sleep_time_cap *= 2
             if sleep_time_cap > retry_time_cap_in_ms:
                 sleep_time_cap = retry_time_cap_in_ms
-        return CoLinkLockToken(
-            key=key,
-            rnd_num=rnd_num,
-        )
+        return (key, rnd_num)
 
-    def unlock(self, lock_token: CoLinkLockToken):
-        rnd_num_in_storage = self.read_entry("_lock:{}".format(lock_token.key))
+    def unlock(self, lock_token: Tuple[str, int]):
+        key, rnd_num = lock_token
+        rnd_num_in_storage = self.read_entry("_lock:{}".format(key))
         rnd_num_in_storage = int().from_bytes(
             rnd_num_in_storage, byteorder="little", signed=False
         )
-        if rnd_num_in_storage == lock_token.rnd_num:
-            self.delete_entry("_lock:{}".format(lock_token.key))
+        if rnd_num_in_storage == rnd_num:
+            self.delete_entry("_lock:{}".format(key))
         else:
             logging.error("Invalid token.")
+
 
 def generate_user() -> Tuple[
     secp256k1.PublicKey, secp256k1.PrivateKey

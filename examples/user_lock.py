@@ -7,12 +7,12 @@ import colink as CL
 from colink.sdk_a import decode_jwt_without_validation, CoLink, str_to_byte
 
 def lock_and_unlock(cl):
-    lock = cl.lock("example_lock_name")
+    key,rnd_num = cl.lock("example_lock_name")
     num = cl.read_entry("example_lock_counter")
     num = int().from_bytes(num, byteorder='little', signed=False)
     print(num)
     cl.update_entry("example_lock_counter",(num+1).to_bytes(length=32, byteorder='little', signed=False))
-    cl.unlock(lock)
+    cl.unlock((key,rnd_num))
 
 if __name__ == "__main__":
     logging.basicConfig(filename="user_lock.log", filemode="a")
