@@ -117,9 +117,11 @@ class CoLink:
             raise e
         else:
             return response.jwt
-        
+
     def generate_token(self, privilege: str) -> str:
-        return self.generate_token_with_expiration_time(get_time_stamp() + 86400, privilege)
+        return self.generate_token_with_expiration_time(
+            get_time_stamp() + 86400, privilege
+        )
 
     def generate_token_with_expiration_time(
         self,
@@ -128,12 +130,12 @@ class CoLink:
     ) -> str:
         client = self._grpc_connect(self.core_addr)
         response = client.GenerateToken(
-                request=CL.GenerateTokenRequest (
-                    expiration_time=expiration_time,
-                    privilege=privilege,
-                ),
-                metadata=get_jwt_auth(self.jwt),
-            )
+            request=CL.GenerateTokenRequest(
+                expiration_time=expiration_time,
+                privilege=privilege,
+            ),
+            metadata=get_jwt_auth(self.jwt),
+        )
         return response.jwt
 
     def create_entry(self, key_name: str, payload: bytes) -> str:
