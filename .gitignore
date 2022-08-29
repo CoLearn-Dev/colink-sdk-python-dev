@@ -18,3 +18,4 @@ colink_*pb2_grpc.py
 !/example-tls/test-cert/*
 /colink-*/
 *.pyc
+install_colink.sh
