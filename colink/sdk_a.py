@@ -543,7 +543,6 @@ class CoLink:
         else:
             logging.error("Invalid token.")
 
-
 def generate_user() -> Tuple[
     secp256k1.PublicKey, secp256k1.PrivateKey
 ]:  # generate key pair(pub key+secret key) by SECP256K1 algorithm
