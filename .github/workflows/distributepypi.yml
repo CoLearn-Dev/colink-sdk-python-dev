@@ -12,10 +12,10 @@ name: Upload Python Package
 on:
   push: 
     branches:
-      - add_pypi
+      - main
   pull_request:
     branches:
-      - add_pypi
+      - main
   release:
     types: [published]
 

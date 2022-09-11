@@ -11,15 +11,17 @@ pop = ProtocolOperator(__name__)
 
 @pop.handle("greetings:initiator")
 def run_initiator(cl: CoLink, param: bytes, participants: List[CL.Participant]):
-    cl.set_variable("test:greeting:output", param, participants[1:])
-
+    logging.info('greetings:initiator protocol operator!')
+    
 
 @pop.handle("greetings:receiver")
 def run_receiver(cl: CoLink, param: bytes, participants: List[CL.Participant]):
-    receive_data = cl.get_variable("test:greeting:output", participants[0])
-    cl.create_entry("tasks:{}:output".format(cl.get_task_id()), receive_data)
-
+    logging.info('greetings:receiver protocol operator!')
+    cl.create_entry("tasks:{}:output".format(cl.get_task_id()), param)
+    
 
 if __name__ == "__main__":
-    logging.basicConfig(filename="protocol_greeting.log", filemode="a")
+    logging.basicConfig(
+        filename="protocol_greeting.log", filemode="a", level=logging.INFO
+    )
     pop.run()
