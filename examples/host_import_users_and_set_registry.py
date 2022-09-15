@@ -10,7 +10,11 @@ from colink.sdk_a import (
 )
 
 if __name__ == "__main__":
-    logging.basicConfig(filename="host_import_users_and_set_registry.log", filemode="a")
+    logging.basicConfig(
+        filename="host_import_users_and_set_registry.log",
+        filemode="a",
+        level=logging.INFO,
+    )
     addr = sys.argv[1]
     host_jwt = sys.argv[2]
     num = int(sys.argv[3])
