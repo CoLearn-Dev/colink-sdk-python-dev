@@ -1,3 +1,6 @@
+[![Python](https://img.shields.io/badge/python-3.9%20%7C%203.10-blue.svg)](https://badge.fury.io/py/colink)
+[![PyPI version](https://badge.fury.io/py/colink.svg)](https://badge.fury.io/py/colink)
+
 # CoLink Python SDK
 CoLink Python SDK  provides a Python3 language support toolkit for application developers which allows them to update storage, manage computation requests, and monitor CoLink server status.
 
