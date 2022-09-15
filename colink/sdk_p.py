@@ -7,6 +7,7 @@ import copy
 import logging
 from hashlib import sha256
 import concurrent.futures
+from concurrent.futures._base import TimeoutError
 import colink as CL
 from colink.sdk_a import byte_to_str, str_to_byte, CoLink, get_timestamp
 
@@ -38,6 +39,19 @@ class ProtocolOperator:
             threads.append(
                 thread_pool.submit(thread_func, protocol_and_role, cl, user_func)
             )
+        concurrent.futures.wait(
+            threads, return_when=concurrent.futures.FIRST_EXCEPTION
+        )  # wait until first exception occurs
+        for t in threads:
+            try:
+                t.result(timeout=0.001)  # try if t has exception occur
+            except concurrent.futures.TimeoutError:
+                pass
+            except Exception as e:  # found the thread where exception occurs
+                thread_pool.shutdown(
+                    wait=False, cancel_futures=True
+                )  # kill all threads in thread pool
+                raise e
         return
 
 

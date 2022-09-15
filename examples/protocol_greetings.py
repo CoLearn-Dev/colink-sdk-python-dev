@@ -18,7 +18,6 @@ def run_initiator(cl: CoLink, param: bytes, participants: List[CL.Participant]):
 def run_receiver(cl: CoLink, param: bytes, participants: List[CL.Participant]):
     logging.info('greetings:receiver protocol operator!')
     cl.create_entry("tasks:{}:output".format(cl.get_task_id()), param)
-    
 
 if __name__ == "__main__":
     logging.basicConfig(

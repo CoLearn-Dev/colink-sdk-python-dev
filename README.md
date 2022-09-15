@@ -13,7 +13,7 @@ CoLink Python SDK  provides a Python3 language support toolkit for application d
 ## Getting started
 We can connect to CoLink server, run protocols, update storage, monitor server status by python SDK. For how to setup a CoLink server, please refer to [colinkctl](https://github.com/CoLearn-Dev/colinkctl).
 
-Assuming that you have `colinkctl` installed, you can first setup up a CoLink server at port `15600` and create 2 users:
+Assuming that you have `colinkctl` installed, you can first setup up a CoLink server at port `15600` and create 2 users, also start the policy module to accept tasks:
 ```
 colinkctl enable_dev_env
 ```
