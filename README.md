@@ -53,7 +53,7 @@ python3 examples/host_import_users_and_set_registry.py <address> <host_jwt> <num
 python3 examples/user_run_task.py <address> <user_jwt A> <user_jwt B> <message> # <message> is optional
 ```
 ```
-python3 examples/user_greetings_to_multiple_users.py <address> <initiator_jwt> <receiver_jwt A> <receiver_jwt B> <receiver_jwtC> ...
+python3 examples/user_greetings_to_multiple_users.py <address> <initiator_jwt> <receiver_jwt A> <receiver_jwt B> <receiver_jwt C> ...
 ```
 ```
 python3 examples/auto_confirm.py <address> <user_jwt> <protocol_name>
