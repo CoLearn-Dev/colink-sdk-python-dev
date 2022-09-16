@@ -1,7 +1,7 @@
+# CoLink Python SDK
 [![Python](https://img.shields.io/badge/python-3.9%20%7C%203.10-blue.svg)](https://badge.fury.io/py/colink)
 [![PyPI version](https://badge.fury.io/py/colink.svg)](https://badge.fury.io/py/colink)
 
-# CoLink Python SDK
 CoLink Python SDK  provides a Python3 language support toolkit for application developers which allows them to update storage, manage computation requests, and monitor CoLink server status.
 
 ## Requirements
@@ -19,11 +19,15 @@ colinkctl enable_dev_env
 ```
 Two users exchange their jwt to each other:
 ```
-python3 examples/user_exchange_jwt.py http://127.0.0.1:15600 $(cat ~/.colink/user_token.txt)
+python3 examples/user_exchange_jwt.py \
+  http://127.0.0.1:15600 \
+  $(cat ~/.colink/user_token.txt)
 ```
 Two users run task `greetings`:
 ```
-python3 examples/user_run_task.py http://127.0.0.1:15600 $(cat ~/.colink/user_token.txt)
+python3 examples/user_run_task.py \
+  http://127.0.0.1:15600 \
+  $(cat ~/.colink/user_token.txt)
 ```
 Check the output of task creation:
 ```
@@ -31,11 +35,15 @@ cat user_run_task.log
 ```
 In the current terminal, run the protocol operator of initiator:
 ```
-python3 examples/protocol_greetings.py --addr http://127.0.0.1:15600  --jwt $(head -n 1 ~/.colink/user_token.txt)
+python3 examples/protocol_greetings.py \
+  --addr http://127.0.0.1:15600  \
+  --jwt $(head -n 1 ~/.colink/user_token.txt)
 ```
 Create a new terminal, run the protocol operator of receiver:
 ```
-python3 examples/protocol_greetings.py --addr http://127.0.0.1:15600  --jwt $(tail -n 1 ~/.colink/user_token.txt)
+python3 examples/protocol_greetings.py \
+  --addr http://127.0.0.1:15600 \
+  --jwt $(tail -n 1 ~/.colink/user_token.txt)
 ```
 Check the output of protocol operators:
 ```
