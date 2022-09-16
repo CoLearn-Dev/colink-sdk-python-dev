@@ -203,24 +203,23 @@ class CoLink:
         else:
             return response.key_path
 
-    def refresh_token(self) -> str:
-        return self.refresh_token_with_expiration_time(get_time_stamp() + 86400)
+    def generate_token(self) -> str:
+        return self.generate_token_with_expiration_time(get_time_stamp() + 86400)
 
-    def refresh_token_with_expiration_time(self, expiration_time: int) -> str:
+    def generate_token_with_expiration_time(self, expiration_time: int) -> str:
         client = self._grpc_connect(self.core_addr)
         try:
-            response = client.RefreshToken(
-                request=CL.RefreshTokenRequest(expiration_time=expiration_time),
+            response = client.GenerateToken(
+                request=CL.GenerateTokenRequest(expiration_time=expiration_time),
                 metadata=get_jwt_auth(self.jwt),
             )
         except grpc.RpcError as e:
             logging.error(
-                f"RefreshToken Received RPC exception: code={e.code()} message={e.details()}"
+                f"GenerateToken Received RPC exception: code={e.code()} message={e.details()}"
             )
             raise e
         else:
-            self.jwt = response.jwt
-            return self.jwt
+            return response.jwt
 
     # The default expiration time is 1 day later. If you want to specify an expiration time, use run_task_with_expiration_time instead.
     def run_task(

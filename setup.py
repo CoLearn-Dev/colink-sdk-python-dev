@@ -47,7 +47,7 @@ desc_file.close()
 
 setup(
     name="colink",
-    version="0.1.9",
+    version="0.1.10",
     description="colink python module",
     long_description=long_description,
     long_description_content_type='text/markdown',
