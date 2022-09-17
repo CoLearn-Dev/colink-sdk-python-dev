@@ -4,7 +4,9 @@ import colink as CL
 from colink.sdk_a import decode_jwt_without_validation, CoLink, str_to_byte
 
 if __name__ == "__main__":
-    logging.basicConfig(filename="user_greeting_to_multi_users.log", filemode="a")
+    logging.basicConfig(
+        filename="user_greeting_to_multi_users.log", filemode="a", level=logging.INFO
+    )
     addr = sys.argv[1]
     users = sys.argv[2:]
     jwt_initiator = users[0]

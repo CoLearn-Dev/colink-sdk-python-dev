@@ -5,7 +5,7 @@ from colink.sdk_a import CoLink, get_timestamp
 
 
 if __name__ == "__main__":
-    logging.basicConfig(filename="auto_confirm.log", filemode="a")
+    logging.basicConfig(filename="auto_confirm.log", filemode="a", level=logging.INFO)
     addr = sys.argv[1]
     jwt = sys.argv[2]
     protocol_name = sys.argv[3]

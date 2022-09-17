@@ -58,7 +58,9 @@ def run_greetings(port: int, user_num: int):
                 thread_pool.submit(run_auto_confirm, addr, users[i], "greetings")
             )
             threads.append(
-                thread_pool.submit(run_auto_confirm, addr, users[i], "remote_storage.create")
+                thread_pool.submit(
+                    run_auto_confirm, addr, users[i], "remote_storage.create"
+                )
             )
         for user in users:
             num = random.randrange(1, 2)
@@ -109,7 +111,7 @@ def start_core(port, param=[]):
     )
 
 
-def remote_storage(addr,jwt):
+def remote_storage(addr, jwt):
     return subprocess.Popen(
         [
             "cargo",
@@ -124,6 +126,7 @@ def remote_storage(addr,jwt):
         stdout=sys.stdout,
         stderr=DEVNULL,
     )
+
 
 def host_import_users_and_exchange_guest_jwts(
     addr: str, jwt: str, user_num: int

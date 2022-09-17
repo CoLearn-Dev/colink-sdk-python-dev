@@ -40,13 +40,17 @@ class CoLinkSubscriber:
 
 class CoLink:
     def __init__(
-        self, coreaddr: str, jwt: str, ca_certificate: str = None, identity: str = None
+        self,
+        coreaddr: str,
+        jwt: str,
+        ca_certificate: str = None,
+        identity: Tuple[str, str] = None,
     ):
         self.core_addr = str(coreaddr)
         self.jwt = str(jwt)
         self.task_id = ""
         self.ca_cert = ca_certificate
-        self.identity = identity
+        self._identity = identity
 
     def request_core_info(self) -> Tuple[str, str]:
         client = self._grpc_connect(self.core_addr)
@@ -203,24 +207,23 @@ class CoLink:
         else:
             return response.key_path
 
-    def refresh_token(self) -> str:
-        return self.refresh_token_with_expiration_time(get_time_stamp() + 86400)
+    def generate_token(self) -> str:
+        return self.generate_token_with_expiration_time(get_time_stamp() + 86400)
 
-    def refresh_token_with_expiration_time(self, expiration_time: int) -> str:
+    def generate_token_with_expiration_time(self, expiration_time: int) -> str:
         client = self._grpc_connect(self.core_addr)
         try:
-            response = client.RefreshToken(
-                request=CL.RefreshTokenRequest(expiration_time=expiration_time),
+            response = client.GenerateToken(
+                request=CL.GenerateTokenRequest(expiration_time=expiration_time),
                 metadata=get_jwt_auth(self.jwt),
             )
         except grpc.RpcError as e:
             logging.error(
-                f"RefreshToken Received RPC exception: code={e.code()} message={e.details()}"
+                f"GenerateToken Received RPC exception: code={e.code()} message={e.details()}"
             )
             raise e
         else:
-            self.jwt = response.jwt
-            return self.jwt
+            return response.jwt
 
     # The default expiration time is 1 day later. If you want to specify an expiration time, use run_task_with_expiration_time instead.
     def run_task(
@@ -316,18 +319,49 @@ class CoLink:
         subscriber = CoLinkSubscriber(mq_uri, queue_name)
         return subscriber
 
+    def ca_certificate(self, ca_certificate: str):
+        f_ca = open(ca_certificate, "rb")
+        self.ca_cert = f_ca.read()
+        f_ca.close()
+
+    def identity(self, client_cert: str, client_key: str):
+        f_cert = open(client_cert, "rb")
+        client_cert = f_cert.read()
+        f_cert.close()
+        f_key = open(client_key, "rb")
+        client_key = f_key.read()
+        f_key.close()
+        self._identity = (client_cert, client_key)
+
     def _grpc_connect(
         self, addr: str
     ) -> CoLinkStub:  # give string addr, return grpc client object, currently non TLS
         try:
-            if self.ca_cert is None:
-                channel = grpc.insecure_channel(
-                    addr.replace("http://", "")
-                )  # without TLS, remove http:// prefix to deal with domain problem
-            else:  # this part has not been tested currently
-                root_certs = open(self.ca_cert).read()
-                credentials = grpc.ssl_channel_credentials(root_certs)
-                channel = grpc.secure_channel(addr.replace("http://", ""), credentials)
+
+            def address_filter(
+                address,
+            ):  # strange bug: when address starts with 127.0.0.1/0.0.0.0 connect error, but using localhost works 
+                if address.startswith("127.0.0.1"):
+                    return address.replace("127.0.0.1", "localhost")
+                elif address.startswith("0.0.0.0"):
+                    return address.replace("0.0.0.0", "localhost")
+                return address
+
+            if addr.startswith("http://"):
+                channel = grpc.insecure_channel(addr.replace("http://", ""))
+            else:  # TLS case
+                if self._identity is not None:
+                    client_cert, client_key = self._identity
+                else:
+                    client_cert, client_key = None, None
+                credentials = grpc.ssl_channel_credentials(
+                    root_certificates=self.ca_cert,
+                    private_key=client_key,
+                    certificate_chain=client_cert,
+                )
+                channel = grpc.secure_channel(
+                    address_filter(addr.replace("https://", "")), credentials
+                )
             stub = CoLinkStub(channel)
         except grpc.RpcError as e:
             logging.error(

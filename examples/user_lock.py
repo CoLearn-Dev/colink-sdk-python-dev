@@ -20,7 +20,7 @@ def lock_and_unlock(cl):
 
 
 if __name__ == "__main__":
-    logging.basicConfig(filename="user_lock.log", filemode="a")
+    logging.basicConfig(filename="user_lock.log", filemode="a", level=logging.INFO)
     addr = sys.argv[1]
     jwt = sys.argv[2]
 
