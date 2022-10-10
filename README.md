@@ -17,15 +17,9 @@ CoLink Python SDK helps both application adnd protocol developers access the fun
 ## Getting started
 We can connect to CoLink server, run protocols, update storage, monitor server status by python SDK. For how to setup a CoLink server, please refer to [colinkctl](https://github.com/CoLearn-Dev/colinkctl).
 
-Assuming that you have `colinkctl` installed, you can first setup up a CoLink server at port `15600` and create 2 users, also start the policy module to accept tasks:
+Assuming that you have `colinkctl` installed, you can first setup up a CoLink server at port `15600` and create 2 users, add both of them to local registry, also start the policy module to accept tasks:
 ```
 colinkctl enable_dev_env
-```
-Two users exchange their jwt to each other:
-```
-python3 examples/user_exchange_jwt.py \
-  http://127.0.0.1:15600 \
-  $(cat ~/.colink/user_token.txt)
 ```
 Two users run task `greetings`:
 ```
