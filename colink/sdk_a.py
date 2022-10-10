@@ -621,14 +621,14 @@ class CoLink:
 
     def wait_task(self, task_id: str):
         task_key = "_internal:tasks:{}".format(task_id)
-        res=self.read_entries([CL.StorageEntry(key_name=task_key)])
+        res = self.read_entries([CL.StorageEntry(key_name=task_key)])
         if res is not None:
-            task =CL.Task.FromString(res[0].payload)            
+            task = CL.Task.FromString(res[0].payload)
             if task.status == "finished":
                 return
-            start_timestamp=get_path_timestamp(res[0].key_path)+1
+            start_timestamp = get_path_timestamp(res[0].key_path)+1
         else:
-            start_timestamp=0
+            start_timestamp = 0
         queue_name = self.subscribe(task_key, start_timestamp)
         subscriber = self.new_subscriber(queue_name)
         while True:
@@ -639,6 +639,7 @@ class CoLink:
                 if task.status == "finished":
                     break
         self.unsubscribe(queue_name)
+
 
 def generate_user() -> Tuple[
     secp256k1.PublicKey, secp256k1.PrivateKey

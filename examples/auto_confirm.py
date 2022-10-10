@@ -5,7 +5,8 @@ from colink.sdk_a import CoLink, get_path_timestamp
 
 
 if __name__ == "__main__":
-    logging.basicConfig(filename="auto_confirm.log", filemode="a", level=logging.INFO)
+    logging.basicConfig(filename="auto_confirm.log",
+                        filemode="a", level=logging.INFO)
     addr = sys.argv[1]
     jwt = sys.argv[2]
     protocol_name = sys.argv[3]
@@ -32,7 +33,8 @@ if __name__ == "__main__":
             for i in range(len(list_.task_ids_with_key_paths)):
                 start_timestamp = min(
                     start_timestamp,
-                    get_path_timestamp(list_.task_ids_with_key_paths[i].key_path),
+                    get_path_timestamp(
+                        list_.task_ids_with_key_paths[i].key_path),
                 )  # find earliest time stamp
     queue_name = cl.subscribe(latest_key, start_timestamp)
     subscriber = cl.new_subscriber(queue_name)
