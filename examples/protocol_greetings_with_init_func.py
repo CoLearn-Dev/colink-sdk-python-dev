@@ -11,7 +11,6 @@ pop = ProtocolOperator(__name__)
 @pop.handle("greetings:@init")
 def run_init(cl: CoLink, _param: bytes, _participants: List[CL.Participant]):
     logging.info('greetings:@init protocol operator!')
-    print(_param,_participants)
     return
 
 @pop.handle("greetings:initiator")
