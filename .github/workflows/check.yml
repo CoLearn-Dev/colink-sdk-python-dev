@@ -1,11 +1,17 @@
-name: colink_python_action
+name: colink_python_check
 on: [push]
 jobs:
-  colink_python_action:
+  colink_python_check:
+    runs-on:  ubuntu-latest
     defaults:
       run:
         shell: bash
-    runs-on:  self-hosted
+    services:
+      rabbitmq:
+        image: rabbitmq:3.8-management
+        ports:
+          - 5672:5672      
+          - 15672:15672
     steps:
       - name: Checkout
         uses: actions/checkout@v3

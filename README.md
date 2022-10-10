@@ -5,8 +5,8 @@
 
 CoLink Python SDK helps both application adnd protocol developers access the functionalities provided by [the CoLink server](https://github.com/CoLearn-Dev/colink-server-dev).
 
-- For *application developers*, CoLink SDK allows them to update storage, manage computation requests, and monitor the CoLink server status.
-- For *protocol developers*, CoLink SDK allows them to write CoLink Extensions that extend the functionality of CoLink to support new protocols.
+- For *application developers*, CoLink Python SDK allows them to update storage, manage computation requests, and monitor the CoLink server status.
+- For *protocol developers*, CoLink Python SDK allows them to write CoLink Extensions that extend the functionality of CoLink to support new protocols.
 
 ## Requirements
 
@@ -15,7 +15,7 @@ CoLink Python SDK helps both application adnd protocol developers access the fun
 
 
 ## Getting started
-We can connect to CoLink server, run protocols, update storage, monitor server status by python SDK. For how to setup a CoLink server, please refer to [colinkctl](https://github.com/CoLearn-Dev/colinkctl).
+For how to setup a CoLink server, please refer to [colinkctl](https://github.com/CoLearn-Dev/colinkctl).
 
 Assuming that you have `colinkctl` installed, you can first setup up a CoLink server at port `15600` and create 2 users, add both of them to local registry, also start the policy module to accept tasks:
 ```
