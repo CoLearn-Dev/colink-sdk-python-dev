@@ -9,7 +9,7 @@ from hashlib import sha256
 import concurrent.futures
 from concurrent.futures._base import TimeoutError
 import colink as CL
-from colink.sdk_a import byte_to_str, str_to_byte, CoLink, get_timestamp
+from colink.sdk_a import byte_to_str, str_to_byte, CoLink, get_path_timestamp
 
 
 def thread_func(protocol_and_role, cl, user_func):
@@ -131,12 +131,12 @@ class CoLinkProtocol:
                 lis = CL.CoLinkInternalTaskIDList.FromString(
                     list_entry.payload)
                 if len(lis.task_ids_with_key_paths) == 0:
-                    start_timestamp = get_timestamp(list_entry.key_path)
+                    start_timestamp = get_path_timestamp(list_entry.key_path)
                 else:
                     start_timestamp = 1e60
                     for p in lis.task_ids_with_key_paths:
                         start_timestamp = min(
-                            start_timestamp, get_timestamp(p.key_path)
+                            start_timestamp, get_path_timestamp(p.key_path)
                         )
             queue_name = self.cl.subscribe(latest_key, start_timestamp)
             self.cl.create_entry(operator_mq_key, str_to_byte(queue_name))

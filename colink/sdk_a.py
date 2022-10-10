@@ -2,6 +2,7 @@ import logging
 import json
 import time
 import base64
+from tracemalloc import start
 from typing import Tuple, List
 import sys
 import pika
@@ -618,6 +619,26 @@ class CoLink:
         client.StopProtocolOperator(
             request=request, metadata=get_jwt_auth(self.jwt))
 
+    def wait_task(self, task_id: str):
+        task_key = "_internal:tasks:{}".format(task_id)
+        res=self.read_entries([CL.StorageEntry(key_name=task_key)])
+        if res is not None:
+            task =CL.Task.FromString(res[0].payload)            
+            if task.status == "finished":
+                return
+            start_timestamp=get_path_timestamp(res[0].key_path)+1
+        else:
+            start_timestamp=0
+        queue_name = self.subscribe(task_key, start_timestamp)
+        subscriber = self.new_subscriber(queue_name)
+        while True:
+            data = subscriber.get_next()
+            message = CL.SubscriptionMessage.FromString(data)
+            if message.change_type != "delete":
+                task = CL.Task.FromString(message.payload)
+                if task.status == "finished":
+                    break
+        self.unsubscribe(queue_name)
 
 def generate_user() -> Tuple[
     secp256k1.PublicKey, secp256k1.PrivateKey
@@ -693,7 +714,7 @@ def byte_to_str(b: bytes):
     return str(b, encoding="utf-8")
 
 
-def get_timestamp(key_path: str) -> int:  # decode path name to get timestamp
+def get_path_timestamp(key_path: str) -> int:  # decode path name to get timestamp
     pos = key_path.rfind("@")
     return int(key_path[pos + 1:])
 
