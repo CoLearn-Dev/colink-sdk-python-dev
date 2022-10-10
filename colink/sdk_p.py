@@ -114,6 +114,7 @@ class CoLinkProtocol:
         mq = pika.BlockingConnection(param)  # establish rabbitmq connection
         channel = mq.channel()
         for method, properties, body in channel.consume(queue_name):
+            channel.basic_ack(method.delivery_tag)
             data = body
             message = CL.SubscriptionMessage.FromString(data)
             if message.change_type != "delete":
@@ -147,7 +148,7 @@ class CoLinkProtocol:
                 else:
 
                     logging.error("Pull Task Error.")
-            channel.basic_ack(method.delivery_tag)
+            
 
 
 def _cl_parse_args() -> CoLink:
