@@ -5,7 +5,9 @@ import colink as CL
 from colink.sdk_a import decode_jwt_without_validation, CoLink, str_to_byte, byte_to_str
 
 if __name__ == "__main__":
-    logging.basicConfig(filename="user_run_task.log", filemode="a", level=logging.INFO)
+    logging.basicConfig(filename="user_run_task.log",
+                        filemode="a",
+                        level=logging.INFO)
     addr = sys.argv[1]
     jwt_a = sys.argv[2]
     jwt_b = sys.argv[3]
@@ -26,8 +28,7 @@ if __name__ == "__main__":
     )
     clb = CoLink(addr, jwt_b)
     data = clb.read_or_wait(
-        "_remote_storage:private:{}:remote_storage_demo".format(user_id_a)
-    )
+        "_remote_storage:private:{}:remote_storage_demo".format(user_id_a))
     print(byte_to_str(data))
 
     # read
