@@ -55,4 +55,4 @@ if __name__ == "__main__":
             # IMPORTANT: you must check the status of the task received from the subscription.
             if task.status == "waiting":
                 cl.confirm_task(task_id.task_id, True, False, "")
-                logging.info("confirm task", task_id.task_id)
+                logging.info("confirm task {}".format(task_id.task_id))
