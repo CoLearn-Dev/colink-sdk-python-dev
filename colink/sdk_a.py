@@ -214,7 +214,8 @@ class CoLink:
         client = self._grpc_connect(self.core_addr)
         try:
             response = client.GenerateToken(
-                request=CL.GenerateTokenRequest(expiration_time=expiration_time),
+                request=CL.GenerateTokenRequest(
+                    expiration_time=expiration_time),
                 metadata=get_jwt_auth(self.jwt),
             )
         except grpc.RpcError as e:
@@ -340,7 +341,7 @@ class CoLink:
 
             def address_filter(
                 address,
-            ):  # strange bug: when address starts with 127.0.0.1/0.0.0.0 connect error, but using localhost works 
+            ):  # strange bug: when address starts with 127.0.0.1/0.0.0.0 connect error, but using localhost works
                 if address.startswith("127.0.0.1"):
                     return address.replace("127.0.0.1", "localhost")
                 elif address.startswith("0.0.0.0"):
@@ -425,11 +426,13 @@ class CoLink:
                     )
                 )
         params = CL.CreateParams(
-            remote_key_name="_variable_transfer:{}:{}".format(self.get_task_id(), key),
+            remote_key_name="_variable_transfer:{}:{}".format(
+                self.get_task_id(), key),
             payload=payload,
         )
         payload = params.SerializeToString()
-        self.run_task("remote_storage.create", payload, new_participants, False)
+        self.run_task("remote_storage.create",
+                      payload, new_participants, False)
 
     def get_variable(self, key: str, sender: CL.Participant) -> bytes:
         if self.task_id is None:
@@ -491,13 +494,15 @@ class CoLink:
             remote_key_name=key, is_public=is_public, holder_id=holder_id
         )
         payload = params.SerializeToString()
-        task_id = self.run_task("remote_storage.read", payload, participants, False)
+        task_id = self.run_task("remote_storage.read",
+                                payload, participants, False)
         status = self.read_or_wait("tasks:{}:status".format(task_id))
         if status[0] == 0:
             data = self.read_or_wait("tasks:{}:output".format(task_id))
             return data
         else:
-            logging.error("remote_storage.read: status_code: {}".format(status[0]))
+            logging.error(
+                "remote_storage.read: status_code: {}".format(status[0]))
             return None
 
     def remote_storage_update(
@@ -514,7 +519,8 @@ class CoLink:
             )
         ]
         for provider in providers:
-            participants.append(CL.Participant(user_id=provider, role="provider"))
+            participants.append(CL.Participant(
+                user_id=provider, role="provider"))
         params = CL.UpdateParams(
             remote_key_name=key, payload=payload, is_public=is_public
         )
@@ -568,7 +574,8 @@ class CoLink:
         sleep_time_cap = 1
         rnd_num = random.getrandbits(32)
         while True:
-            payload = rnd_num.to_bytes(length=32, byteorder="little", signed=False)
+            payload = rnd_num.to_bytes(
+                length=32, byteorder="little", signed=False)
             try:
                 ret = self.create_entry("_lock:{}".format(key), payload)
             except grpc.RpcError as e:
@@ -593,6 +600,24 @@ class CoLink:
         else:
             logging.error("Invalid token.")
 
+    def start_protocol_operator(self, protocol_name: str, user_id: str):
+        client = self._grpc_connect(self.core_addr)
+        request = CL.StartProtocolOperatorRequest(
+            protocol_name=protocol_name,
+            user_id=user_id
+        )
+        response = client.StartProtocolOperator(
+            request=request, metadata=get_jwt_auth(self.jwt))
+        return response.instance_id
+
+    def stop_protocol_operator(self, instance_id: str):
+        client = self._grpc_connect(self.core_addr)
+        request = CL.ProtocolOperatorInstanceId(
+            instance_id=instance_id
+        )
+        client.StopProtocolOperator(
+            request=request, metadata=get_jwt_auth(self.jwt))
+
 
 def generate_user() -> Tuple[
     secp256k1.PublicKey, secp256k1.PrivateKey
@@ -605,7 +630,8 @@ def generate_user() -> Tuple[
 def prepare_import_user_signature(
     user_pub_key: secp256k1.PublicKey,
     user_sec_key: secp256k1.PrivateKey,
-    core_pub_key: str,  # directly use string because hard to construct string back to secp256k1.PublicKey
+    # directly use string because hard to construct string back to secp256k1.PublicKey
+    core_pub_key: str,
     expiration_timestamp: int,
 ) -> Tuple[int, str]:
     signature_timestamp = get_time_stamp()
@@ -669,7 +695,7 @@ def byte_to_str(b: bytes):
 
 def get_timestamp(key_path: str) -> int:  # decode path name to get timestamp
     pos = key_path.rfind("@")
-    return int(key_path[pos + 1 :])
+    return int(key_path[pos + 1:])
 
 
 def get_jwt_auth(

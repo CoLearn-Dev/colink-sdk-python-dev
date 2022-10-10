@@ -83,6 +83,12 @@ python3 examples/protocol_greetings.py --addr <address> --jwt <user_jwt>
 python3 examples/user_remote_storage.py <address> <user_jwt A> <user_jwt B> <message> # <message> is optional
 ```
 ```
+python3 examples/user_start_protocol_operator.py <address> <user_jwt> <protocol_name>
+```
+```
+python3 examples/user_stop_protocol_operator.py <address> <user_jwt> <instance_id>
+```
+```
 python3 examples/user_lock.py <address> <user_jwt>
 ```
 ## Running Tests
