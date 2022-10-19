@@ -1,5 +1,6 @@
 import sys
 from colink.sdk_a import CoLink
+
 if __name__ == "__main__":
     addr = sys.argv[1]
     jwt = sys.argv[2]

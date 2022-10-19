@@ -12,9 +12,14 @@ if __name__ == "__main__":
     message = cl.read_or_wait(latest_key)
     if message != None:
         task = CL.Task().FromString(message)
-        res = cl.read_entries([
-            CL.StorageEntry(key_name="tasks:{}:output".format(task.task_id), )
-        ])
+        res = cl.read_entries(
+            [
+                CL.StorageEntry(
+                    key_name="tasks:{}:output".format(task.task_id),
+                )
+            ]
+        )
         output_entry = res[0]
-        print(byte_to_str(output_entry.payload),
-              end="")  # send the greeting message to pipe
+        print(
+            byte_to_str(output_entry.payload), end=""
+        )  # send the greeting message to pipe

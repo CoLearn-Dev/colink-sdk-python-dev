@@ -1,3 +1,4 @@
+from importlib.metadata import metadata
 import logging
 import json
 import time
@@ -14,7 +15,6 @@ import colink as CL
 
 
 class JWT:
-
     def __init__(self, role: str, user_id: str, exp: int):
         self.role = role
         self.user_id = user_id
@@ -22,7 +22,6 @@ class JWT:
 
 
 class CoLinkSubscriber:
-
     def __init__(self, mq_uri: str, queue_name: str):
         self.uri = mq_uri
         self.queue_name = queue_name
@@ -32,15 +31,15 @@ class CoLinkSubscriber:
 
     def get_next(self) -> bytes:
         for method, properties, body in self.channel.consume(
-                self.queue_name
+            self.queue_name
         ):  # get the first package from queue then return
             self.channel.basic_ack(
-                method.delivery_tag)  # ack this package before return
+                method.delivery_tag
+            )  # ack this package before return
             return body
 
 
 class CoLink:
-
     def __init__(
         self,
         coreaddr: str,
@@ -71,7 +70,8 @@ class CoLink:
 
     def import_guest_jwt(self, jwt: str):
         jwt_decoded = decode_jwt_without_validation(
-            jwt)  # want user_id from jwt, decode it to get
+            jwt
+        )  # want user_id from jwt, decode it to get
         self.create_entry(
             "_internal:known_users:{}:guest_jwt".format(jwt_decoded.user_id),
             str_to_byte(jwt),
@@ -125,7 +125,8 @@ class CoLink:
 
     def generate_token(self, privilege: str) -> str:
         return self.generate_token_with_expiration_time(
-            get_time_stamp() + 86400, privilege)
+            get_time_stamp() + 86400, privilege
+        )
 
     def generate_token_with_expiration_time(
         self,
@@ -160,8 +161,7 @@ class CoLink:
         else:
             return response.key_path
 
-    def read_entries(self,
-                     entries: List[CL.StorageEntry]) -> List[CL.StorageEntry]:
+    def read_entries(self, entries: List[CL.StorageEntry]) -> List[CL.StorageEntry]:
         client = self._grpc_connect(self.core_addr)
         try:
             response = client.ReadEntries(
@@ -195,7 +195,9 @@ class CoLink:
         client = self._grpc_connect(self.core_addr)
         try:
             response = client.DeleteEntry(
-                CL.StorageEntry(key_name=key_name, ),
+                CL.StorageEntry(
+                    key_name=key_name,
+                ),
                 metadata=get_jwt_auth(self.jwt),
             )
         except grpc.RpcError as e:
@@ -207,15 +209,13 @@ class CoLink:
             return response.key_path
 
     def generate_token(self) -> str:
-        return self.generate_token_with_expiration_time(get_time_stamp() +
-                                                        86400)
+        return self.generate_token_with_expiration_time(get_time_stamp() + 86400)
 
     def generate_token_with_expiration_time(self, expiration_time: int) -> str:
         client = self._grpc_connect(self.core_addr)
         try:
             response = client.GenerateToken(
-                request=CL.GenerateTokenRequest(
-                    expiration_time=expiration_time),
+                request=CL.GenerateTokenRequest(expiration_time=expiration_time),
                 metadata=get_jwt_auth(self.jwt),
             )
         except grpc.RpcError as e:
@@ -277,9 +277,9 @@ class CoLink:
         response = client.ConfirmTask(
             request=CL.ConfirmTaskRequest(
                 task_id=task_id,
-                decision=CL.Decision(is_approved=is_approved,
-                                     is_rejected=is_rejected,
-                                     reason=reason),
+                decision=CL.Decision(
+                    is_approved=is_approved, is_rejected=is_rejected, reason=reason
+                ),
             ),
             metadata=get_jwt_auth(self.jwt),
         )
@@ -287,7 +287,9 @@ class CoLink:
     def finish_task(self, task_id: str):
         client = self._grpc_connect(self.core_addr)
         response = client.FinishTask(
-            request=CL.Task(task_id=task_id, ),
+            request=CL.Task(
+                task_id=task_id,
+            ),
             metadata=get_jwt_auth(self.jwt),
         )
 
@@ -307,7 +309,9 @@ class CoLink:
     def unsubscribe(self, queue_name: str):
         client = self._grpc_connect(self.core_addr)
         response = client.Unsubscribe(
-            CL.MQQueueName(queue_name=queue_name, ),
+            CL.MQQueueName(
+                queue_name=queue_name,
+            ),
             metadata=get_jwt_auth(self.jwt),
         )
 
@@ -357,7 +361,8 @@ class CoLink:
                     certificate_chain=client_cert,
                 )
                 channel = grpc.secure_channel(
-                    address_filter(addr.replace("https://", "")), credentials)
+                    address_filter(addr.replace("https://", "")), credentials
+                )
             stub = CoLinkStub(channel)
         except grpc.RpcError as e:
             logging.error(
@@ -377,6 +382,16 @@ class CoLink:
             return None
         else:
             return res[0].payload
+
+    def read_keys(
+        self,
+        prefix: str,
+        include_history: bool,
+    ) -> List[CL.StorageEntry]:
+        client = self._grpc_connect(self.core_addr)
+        request = CL.ReadKeysRequest(prefix=prefix, include_history=include_history)
+        response = client.ReadKeys(request, metadata=get_jwt_auth(self.jwt))
+        return response.entries
 
     def read_or_wait(self, key: str) -> bytes:
         res = self.read_entry(key)
@@ -399,8 +414,7 @@ class CoLink:
         auth_content = decode_jwt_without_validation(self.jwt)
         return auth_content.user_id
 
-    def set_variable(self, key: str, payload: bytes,
-                     receivers: List[CL.Participant]):
+    def set_variable(self, key: str, payload: bytes, receivers: List[CL.Participant]):
         if self.task_id is None:
             logging.error("set_variable task_id not found")
         new_participants = [
@@ -409,8 +423,9 @@ class CoLink:
         for p in receivers:
             if p.user_id == self.get_user_id():
                 self.create_entry(
-                    "_remote_storage:private:{}:_variable_transfer:{}:{}".
-                    format(p.user_id, self.get_task_id(), key),
+                    "_remote_storage:private:{}:_variable_transfer:{}:{}".format(
+                        p.user_id, self.get_task_id(), key
+                    ),
                     payload,
                 )
             else:
@@ -418,21 +433,21 @@ class CoLink:
                     CL.Participant(
                         user_id=p.user_id,
                         role="provider",
-                    ))
+                    )
+                )
         params = CL.CreateParams(
-            remote_key_name="_variable_transfer:{}:{}".format(
-                self.get_task_id(), key),
+            remote_key_name="_variable_transfer:{}:{}".format(self.get_task_id(), key),
             payload=payload,
         )
         payload = params.SerializeToString()
-        self.run_task("remote_storage.create", payload, new_participants,
-                      False)
+        self.run_task("remote_storage.create", payload, new_participants, False)
 
     def get_variable(self, key: str, sender: CL.Participant) -> bytes:
         if self.task_id is None:
             logging.error("get_variable task_id not found")
         key = "_remote_storage:private:{}:_variable_transfer:{}:{}".format(
-            sender.user_id, self.get_task_id(), key)
+            sender.user_id, self.get_task_id(), key
+        )
         res = self.read_or_wait(key)
         return res
 
@@ -460,10 +475,11 @@ class CoLink:
                 CL.Participant(
                     user_id=provider,
                     role="provider",
-                ))
-        params = CL.CreateParams(remote_key_name=key,
-                                 payload=payload,
-                                 is_public=is_public)
+                )
+            )
+        params = CL.CreateParams(
+            remote_key_name=key, payload=payload, is_public=is_public
+        )
         payload = params.SerializeToString()
 
         self.run_task("remote_storage.create", payload, participants, False)
@@ -482,19 +498,17 @@ class CoLink:
             ),
             CL.Participant(user_id=provider, role="provider"),
         ]
-        params = CL.ReadParams(remote_key_name=key,
-                               is_public=is_public,
-                               holder_id=holder_id)
+        params = CL.ReadParams(
+            remote_key_name=key, is_public=is_public, holder_id=holder_id
+        )
         payload = params.SerializeToString()
-        task_id = self.run_task("remote_storage.read", payload, participants,
-                                False)
+        task_id = self.run_task("remote_storage.read", payload, participants, False)
         status = self.read_or_wait("tasks:{}:status".format(task_id))
         if status[0] == 0:
             data = self.read_or_wait("tasks:{}:output".format(task_id))
             return data
         else:
-            logging.error("remote_storage.read: status_code: {}".format(
-                status[0]))
+            logging.error("remote_storage.read: status_code: {}".format(status[0]))
             return None
 
     def remote_storage_update(
@@ -511,11 +525,10 @@ class CoLink:
             )
         ]
         for provider in providers:
-            participants.append(
-                CL.Participant(user_id=provider, role="provider"))
-        params = CL.UpdateParams(remote_key_name=key,
-                                 payload=payload,
-                                 is_public=is_public)
+            participants.append(CL.Participant(user_id=provider, role="provider"))
+        params = CL.UpdateParams(
+            remote_key_name=key, payload=payload, is_public=is_public
+        )
         payload = params.SerializeToString()
         self.run_task("remote_storage.update", payload, participants, False)
 
@@ -536,7 +549,8 @@ class CoLink:
                 CL.Participant(
                     user_id=provider,
                     role="provider",
-                ))
+                )
+            )
         params = CL.DeleteParams(
             remote_key_name=key,
             is_public=is_public,
@@ -565,9 +579,7 @@ class CoLink:
         sleep_time_cap = 1
         rnd_num = random.getrandbits(32)
         while True:
-            payload = rnd_num.to_bytes(length=32,
-                                       byteorder="little",
-                                       signed=False)
+            payload = rnd_num.to_bytes(length=32, byteorder="little", signed=False)
             try:
                 ret = self.create_entry("_lock:{}".format(key), payload)
             except grpc.RpcError as e:
@@ -584,9 +596,9 @@ class CoLink:
     def unlock(self, lock_token: Tuple[str, int]):
         key, rnd_num = lock_token
         rnd_num_in_storage = self.read_entry("_lock:{}".format(key))
-        rnd_num_in_storage = int().from_bytes(rnd_num_in_storage,
-                                              byteorder="little",
-                                              signed=False)
+        rnd_num_in_storage = int().from_bytes(
+            rnd_num_in_storage, byteorder="little", signed=False
+        )
         if rnd_num_in_storage == rnd_num:
             self.delete_entry("_lock:{}".format(key))
         else:
@@ -594,18 +606,18 @@ class CoLink:
 
     def start_protocol_operator(self, protocol_name: str, user_id: str):
         client = self._grpc_connect(self.core_addr)
-        request = CL.StartProtocolOperatorRequest(protocol_name=protocol_name,
-                                                  user_id=user_id)
-        response = client.StartProtocolOperator(request=request,
-                                                metadata=get_jwt_auth(
-                                                    self.jwt))
+        request = CL.StartProtocolOperatorRequest(
+            protocol_name=protocol_name, user_id=user_id
+        )
+        response = client.StartProtocolOperator(
+            request=request, metadata=get_jwt_auth(self.jwt)
+        )
         return response.instance_id
 
     def stop_protocol_operator(self, instance_id: str):
         client = self._grpc_connect(self.core_addr)
         request = CL.ProtocolOperatorInstanceId(instance_id=instance_id)
-        client.StopProtocolOperator(request=request,
-                                    metadata=get_jwt_auth(self.jwt))
+        client.StopProtocolOperator(request=request, metadata=get_jwt_auth(self.jwt))
 
     def wait_task(self, task_id: str):
         task_key = "_internal:tasks:{}".format(task_id)
@@ -630,8 +642,8 @@ class CoLink:
 
 
 def generate_user() -> Tuple[
-    secp256k1.PublicKey, secp256k1.
-    PrivateKey]:  # generate key pair(pub key+secret key) by SECP256K1 algorithm
+    secp256k1.PublicKey, secp256k1.PrivateKey
+]:  # generate key pair(pub key+secret key) by SECP256K1 algorithm
     private_key = secp256k1.PrivateKey()
     public_key = private_key.pubkey
     return public_key, private_key
@@ -645,18 +657,22 @@ def prepare_import_user_signature(
     expiration_timestamp: int,
 ) -> Tuple[int, str]:
     signature_timestamp = get_time_stamp()
-    msg = (public_key_to_vec(user_pub_key) +
-           signature_timestamp.to_bytes(8, byteorder="little") +
-           expiration_timestamp.to_bytes(8, byteorder="little") + core_pub_key
-           )  # connect them all
+    msg = (
+        public_key_to_vec(user_pub_key)
+        + signature_timestamp.to_bytes(8, byteorder="little")
+        + expiration_timestamp.to_bytes(8, byteorder="little")
+        + core_pub_key
+    )  # connect them all
     ecdsax = user_sec_key.ecdsa_sign(msg)  # sign and get signature
     signature = user_sec_key.ecdsa_serialize_compact(
-        ecdsax)  # serialize the signature to given format align rust
+        ecdsax
+    )  # serialize the signature to given format align rust
     return signature_timestamp, signature
 
 
 def decode_jwt_without_validation(
-    jwt: str, ) -> JWT:  # decode jwt string to get JWT object(with validation)
+    jwt: str,
+) -> JWT:  # decode jwt string to get JWT object(with validation)
     split = jwt.split(".")
     try:
         payload = base64_decode(split[1])
@@ -671,8 +687,8 @@ def decode_jwt_without_validation(
             raise res
         else:
             jwt = JWT(
-                dic["privilege"], dic["user_id"],
-                dic["exp"])  # construct JWT from decoded result and return
+                dic["privilege"], dic["user_id"], dic["exp"]
+            )  # construct JWT from decoded result and return
             return jwt
 
 
@@ -699,16 +715,17 @@ def byte_to_str(b: bytes):
     return str(b, encoding="utf-8")
 
 
-def get_path_timestamp(
-        key_path: str) -> int:  # decode path name to get timestamp
+def get_path_timestamp(key_path: str) -> int:  # decode path name to get timestamp
     pos = key_path.rfind("@")
-    return int(key_path[pos + 1:])
+    return int(key_path[pos + 1 :])
 
 
 def get_jwt_auth(
     jwt: str,
 ):  # duplicate functionality of creating metadata for authorization from jwt
-    return [(
-        "authorization",
-        jwt,
-    )]
+    return [
+        (
+            "authorization",
+            jwt,
+        )
+    ]

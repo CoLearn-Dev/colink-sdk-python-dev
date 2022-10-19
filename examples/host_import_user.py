@@ -1,7 +1,11 @@
 import sys
 import logging
-from colink.sdk_a import (CoLink, get_time_stamp, generate_user,
-                          prepare_import_user_signature)
+from colink.sdk_a import (
+    CoLink,
+    get_time_stamp,
+    generate_user,
+    prepare_import_user_signature,
+)
 
 if __name__ == "__main__":
     logging.basicConfig(
@@ -16,7 +20,7 @@ if __name__ == "__main__":
     pub_key, sec_key = generate_user()
     _, core_pub_key = cl.request_core_info()
     signature_timestamp, sig = prepare_import_user_signature(
-        pub_key, sec_key, core_pub_key, expiration_timestamp)
-    jwt = cl.import_user(pub_key, signature_timestamp, expiration_timestamp,
-                         sig)
+        pub_key, sec_key, core_pub_key, expiration_timestamp
+    )
+    jwt = cl.import_user(pub_key, signature_timestamp, expiration_timestamp, sig)
     logging.info("import user success! (jwt): %s", jwt)
