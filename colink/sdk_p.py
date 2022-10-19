@@ -190,9 +190,9 @@ def _cl_parse_args() -> CoLink:
     addr, jwt, ca, cert, key = args.addr, args.jwt, args.ca, args.cert, args.key
     cl = CoLink(addr, jwt)
     if ca != "":
-        cl = cl.ca_certificate(ca)
+        cl.ca_certificate(ca)
     if cert != "" and key != "":
-        cl = cl.identity(cert, key)
+        cl.identity(cert, key)
     return cl
 
 
