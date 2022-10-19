@@ -193,7 +193,6 @@ def _cl_parse_args() -> CoLink:
         cl.ca_certificate(ca)
     if cert != "" and key != "":
         cl.identity(cert, key)
-    
     return cl
 
 
