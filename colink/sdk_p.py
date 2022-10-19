@@ -92,8 +92,6 @@ class CoLinkProtocol:
         self.user_func = user_func
 
     def start(self):
-
-        # TODO blocker https://github.com/camelop/dds-dev/issues/25#issuecomment-1079913866
         operator_mq_key = "_internal:protocols:{}:operator_mq".format(
             self.protocol_and_role
         )

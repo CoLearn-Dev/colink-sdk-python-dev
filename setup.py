@@ -3,7 +3,8 @@ import pip
 import os
 import pkg_resources
 
-pip.main(["install", "grpcio-tools==1.45.0"])
+grpc_tools_version = "grpcio-tools==1.48.0"
+pip.main(["install", grpc_tools_version])
 import grpc_tools.protoc
 
 
@@ -55,6 +56,7 @@ setup(
     author_email="",
     packages=["colink"],  # same as name
     install_requires=[
+        grpc_tools_version,
         "secp256k1==0.14.0",
         "pika==1.2.0",
     ],  # external packages as dependencies
