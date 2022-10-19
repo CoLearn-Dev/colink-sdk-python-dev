@@ -341,7 +341,7 @@ class CoLink:
 
             def address_filter(
                 address,
-            ):  # bug: when address starts with 127.0.0.1/0.0.0.0 connect error, but using localhost works, due to domain cert
+            ):  # when address starts with 127.0.0.1/0.0.0.0 connect error, but using localhost works, due to domain cert
                 if address.startswith("127.0.0.1"):
                     return address.replace("127.0.0.1", "localhost")
                 elif address.startswith("0.0.0.0"):
