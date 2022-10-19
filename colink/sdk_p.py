@@ -1,9 +1,6 @@
-import functools
-import queue
-from typing import Tuple, List, Dict
+import os
 import argparse
 import pika
-import copy
 import logging
 from hashlib import sha256
 import concurrent.futures
@@ -182,6 +179,21 @@ def _cl_parse_args() -> CoLink:
     parser.add_argument("--key", type=str, default="", help="")
     args = parser.parse_args()
     addr, jwt, ca, cert, key = args.addr, args.jwt, args.ca, args.cert, args.key
+    if addr == "":
+        if os.environ.get("COLINK_CORE_ADDR") is not None:
+            addr = os.environ["COLINK_CORE_ADDR"]
+    if jwt == "":
+        if os.environ.get("COLINK_JWT"):
+            jwt = os.environ["COLINK_JWT"]
+    if ca == "":
+        if os.environ.get("COLINK_CA_CERT") is not None:
+            ca = os.environ["COLINK_CA_CERT"]
+    if cert == "":
+        if os.environ.get("COLINK_CLIENT_CERT") is not None:
+            cert = os.environ["COLINK_CLIENT_CERT"]
+    if key == "":
+        if os.environ.get("COLINK_CLIENT_KEY") is not None:
+            key = os.environ["COLINK_CLIENT_KEY"]
     cl = CoLink(addr, jwt)
     if ca != "":
         cl.ca_certificate(ca)
