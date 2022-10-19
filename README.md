@@ -2,8 +2,7 @@
 [![Python](https://img.shields.io/badge/python-3.9%20%7C%203.10-blue.svg)](https://badge.fury.io/py/colink)
 [![PyPI version](https://badge.fury.io/py/colink.svg)](https://badge.fury.io/py/colink)
 
-
-CoLink Python SDK helps both application adnd protocol developers access the functionalities provided by [the CoLink server](https://github.com/CoLearn-Dev/colink-server-dev).
+CoLink Python SDK helps both application and protocol developers access the functionalities provided by [the CoLink server](https://github.com/CoLearn-Dev/colink-server-dev).
 
 - For *application developers*, CoLink Python SDK allows them to update storage, manage computation requests, and monitor the CoLink server status.
 - For *protocol developers*, CoLink Python SDK allows them to write CoLink Extensions that extend the functionality of CoLink to support new protocols.
