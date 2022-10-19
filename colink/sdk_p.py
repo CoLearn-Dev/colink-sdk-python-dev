@@ -33,7 +33,6 @@ class ProtocolOperator:
         operator_funcs = {}
         protocols = []
         for protocol_and_role, user_func in self.mapping.items():
-            cl = copy.deepcopy(cl)
             if protocol_and_role.endswith(":@init"):
                 protocol_name = protocol_and_role[: len(protocol_and_role) - 6]
                 is_initialized_key = "_internal:protocols:{}:_is_initialized".format(
@@ -42,9 +41,8 @@ class ProtocolOperator:
                 lock = cl.lock(is_initialized_key)
                 res = cl.read_entry(is_initialized_key)
                 if res is None or res[0] == 0:
-                    cl_clone = copy.deepcopy(cl)
                     try:
-                        user_func(cl_clone, None, [])
+                        user_func(cl, None, [])
                     except Exception as e:
                         logging.error("{}: {}.".format(protocol_and_role, e))
                     cl.update_entry(is_initialized_key, bytes([1]))
@@ -53,17 +51,15 @@ class ProtocolOperator:
                 protocols.append(protocol_and_role[: protocol_and_role.rfind(":")])
                 operator_funcs[protocol_and_role] = user_func
 
-        cl_clone = copy.deepcopy(cl)
         for protocol_name in protocols:
             is_initialized_key = "_internal:protocols:{}:_is_initialized".format(
                 protocol_name
             )
-            cl_clone.update_entry(is_initialized_key, bytes([1]))
+            cl.update_entry(is_initialized_key, bytes([1]))
 
         thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=64)
         threads = []
         for protocol_and_role in self.mapping.keys():  # insert user func to map
-            cl = copy.deepcopy(cl)
             user_func = self.mapping[protocol_and_role]
             threads.append(
                 thread_pool.submit(thread_func, protocol_and_role, cl, user_func)

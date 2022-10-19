@@ -90,7 +90,7 @@ class CoLink:
     def set_task_id(self, task_id: str):
         self.task_id = task_id
 
-    def get_task_id(self) -> Tuple[str, str]:
+    def get_task_id(self) -> str:
         if len(self.task_id) == 0:
             logging.error("task_id not found")
             return None
