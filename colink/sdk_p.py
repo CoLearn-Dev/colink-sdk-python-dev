@@ -28,7 +28,7 @@ class ProtocolOperator:
     def run(self):
         cl = _cl_parse_args()
         operator_funcs = {}
-        protocols = []
+        protocols = set()
         for protocol_and_role, user_func in self.mapping.items():
             if protocol_and_role.endswith(":@init"):
                 protocol_name = protocol_and_role[: len(protocol_and_role) - 6]
@@ -45,7 +45,7 @@ class ProtocolOperator:
                     cl.update_entry(is_initialized_key, bytes([1]))
                 cl.unlock(lock)
             else:
-                protocols.append(protocol_and_role[: protocol_and_role.rfind(":")])
+                protocols.add(protocol_and_role[: protocol_and_role.rfind(":")])
                 operator_funcs[protocol_and_role] = user_func
 
         for protocol_name in protocols:
@@ -171,29 +171,18 @@ class CoLinkProtocol:
 
 
 def _cl_parse_args() -> CoLink:
-    parser = argparse.ArgumentParser(description="protocol greeting")
+    parser = argparse.ArgumentParser(description="protocol operator entry")
     parser.add_argument("--addr", type=str, default="", help="")
     parser.add_argument("--jwt", type=str, default="", help="")
     parser.add_argument("--ca", type=str, default="", help="")
     parser.add_argument("--cert", type=str, default="", help="")
     parser.add_argument("--key", type=str, default="", help="")
     args = parser.parse_args()
-    addr, jwt, ca, cert, key = args.addr, args.jwt, args.ca, args.cert, args.key
-    if addr == "":
-        if os.environ.get("COLINK_CORE_ADDR") is not None:
-            addr = os.environ["COLINK_CORE_ADDR"]
-    if jwt == "":
-        if os.environ.get("COLINK_JWT"):
-            jwt = os.environ["COLINK_JWT"]
-    if ca == "":
-        if os.environ.get("COLINK_CA_CERT") is not None:
-            ca = os.environ["COLINK_CA_CERT"]
-    if cert == "":
-        if os.environ.get("COLINK_CLIENT_CERT") is not None:
-            cert = os.environ["COLINK_CLIENT_CERT"]
-    if key == "":
-        if os.environ.get("COLINK_CLIENT_KEY") is not None:
-            key = os.environ["COLINK_CLIENT_KEY"]
+    addr = args.addr if args.addr else os.environ.get("COLINK_CORE_ADDR", "")
+    jwt = args.jwt if args.jwt else os.environ.get("COLINK_JWT", "")
+    ca = args.ca if args.ca else os.environ.get("COLINK_CA_CERT", "")
+    cert = args.cert if args.cert else os.environ.get("COLINK_CLIENT_CERT", "")
+    key = args.key if args.key else os.environ.get("COLINK_CLIENT_KEY", "")
     cl = CoLink(addr, jwt)
     if ca != "":
         cl.ca_certificate(ca)
