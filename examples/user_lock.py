@@ -33,7 +33,6 @@ if __name__ == "__main__":
     ths = []
     child_processes = []
     for _ in range(10):
-        cl = copy.deepcopy(cl)
         ths.append(threading.Thread(target=lock_and_unlock, args=(cl,)))
 
     for th in ths:

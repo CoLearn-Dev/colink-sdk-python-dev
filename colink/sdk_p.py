@@ -1,15 +1,12 @@
-import functools
-import queue
-from typing import Tuple, List, Dict
+import os
 import argparse
 import pika
-import copy
 import logging
 from hashlib import sha256
 import concurrent.futures
 from concurrent.futures._base import TimeoutError
 import colink as CL
-from colink.sdk_a import byte_to_str, str_to_byte, CoLink, get_timestamp
+from colink.sdk_a import byte_to_str, str_to_byte, CoLink, get_path_timestamp
 
 
 def thread_func(protocol_and_role, cl, user_func):
@@ -30,12 +27,37 @@ class ProtocolOperator:
 
     def run(self):
         cl = _cl_parse_args()
+        operator_funcs = {}
+        protocols = set()
+        for protocol_and_role, user_func in self.mapping.items():
+            if protocol_and_role.endswith(":@init"):
+                protocol_name = protocol_and_role[: len(protocol_and_role) - 6]
+                is_initialized_key = "_internal:protocols:{}:_is_initialized".format(
+                    protocol_name
+                )
+                lock = cl.lock(is_initialized_key)
+                res = cl.read_entry(is_initialized_key)
+                if res is None or res[0] == 0:
+                    try:
+                        user_func(cl, None, [])
+                    except Exception as e:
+                        logging.error("{}: {}.".format(protocol_and_role, e))
+                    cl.update_entry(is_initialized_key, bytes([1]))
+                cl.unlock(lock)
+            else:
+                protocols.add(protocol_and_role[: protocol_and_role.rfind(":")])
+                operator_funcs[protocol_and_role] = user_func
+
+        for protocol_name in protocols:
+            is_initialized_key = "_internal:protocols:{}:_is_initialized".format(
+                protocol_name
+            )
+            cl.update_entry(is_initialized_key, bytes([1]))
+
         thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=64)
         threads = []
-        for x in self.mapping.keys():  # insert user func to map
-            cl = copy.deepcopy(cl)
-            protocol_and_role = x
-            user_func = self.mapping[x]
+        for protocol_and_role in self.mapping.keys():  # insert user func to map
+            user_func = self.mapping[protocol_and_role]
             threads.append(
                 thread_pool.submit(thread_func, protocol_and_role, cl, user_func)
             )
@@ -67,8 +89,6 @@ class CoLinkProtocol:
         self.user_func = user_func
 
     def start(self):
-
-        # TODO blocker https://github.com/camelop/dds-dev/issues/25#issuecomment-1079913866
         operator_mq_key = "_internal:protocols:{}:operator_mq".format(
             self.protocol_and_role
         )
@@ -100,12 +120,12 @@ class CoLinkProtocol:
                 list_entry = res[0]
                 lis = CL.CoLinkInternalTaskIDList.FromString(list_entry.payload)
                 if len(lis.task_ids_with_key_paths) == 0:
-                    start_timestamp = get_timestamp(list_entry.key_path)
+                    start_timestamp = get_path_timestamp(list_entry.key_path)
                 else:
                     start_timestamp = 1e60
                     for p in lis.task_ids_with_key_paths:
                         start_timestamp = min(
-                            start_timestamp, get_timestamp(p.key_path)
+                            start_timestamp, get_path_timestamp(p.key_path)
                         )
             queue_name = self.cl.subscribe(latest_key, start_timestamp)
             self.cl.create_entry(operator_mq_key, str_to_byte(queue_name))
@@ -114,6 +134,7 @@ class CoLinkProtocol:
         mq = pika.BlockingConnection(param)  # establish rabbitmq connection
         channel = mq.channel()
         for method, properties, body in channel.consume(queue_name):
+            channel.basic_ack(method.delivery_tag)
             data = body
             message = CL.SubscriptionMessage.FromString(data)
             if message.change_type != "delete":
@@ -147,27 +168,26 @@ class CoLinkProtocol:
                 else:
 
                     logging.error("Pull Task Error.")
-            channel.basic_ack(method.delivery_tag)
 
 
 def _cl_parse_args() -> CoLink:
-    parser = argparse.ArgumentParser(description="protocol greeting")
+    parser = argparse.ArgumentParser(description="protocol operator entry")
     parser.add_argument("--addr", type=str, default="", help="")
     parser.add_argument("--jwt", type=str, default="", help="")
     parser.add_argument("--ca", type=str, default="", help="")
     parser.add_argument("--cert", type=str, default="", help="")
     parser.add_argument("--key", type=str, default="", help="")
     args = parser.parse_args()
-    addr, jwt, ca, cert, key = args.addr, args.jwt, args.ca, args.cert, args.key
+    addr = args.addr if args.addr else os.environ.get("COLINK_CORE_ADDR", "")
+    jwt = args.jwt if args.jwt else os.environ.get("COLINK_JWT", "")
+    ca = args.ca if args.ca else os.environ.get("COLINK_CA_CERT", "")
+    cert = args.cert if args.cert else os.environ.get("COLINK_CLIENT_CERT", "")
+    key = args.key if args.key else os.environ.get("COLINK_CLIENT_KEY", "")
     cl = CoLink(addr, jwt)
-    """
-    if let Some(ca) = ca {
-        cl = cl.ca_certificate(&ca);
-    }
-    if let (Some(cert), Some(key)) = (cert, key) {
-        cl = cl.identity(&cert, &key);
-    }
-    """
+    if ca != "":
+        cl.ca_certificate(ca)
+    if cert != "" and key != "":
+        cl.identity(cert, key)
     return cl
 
 

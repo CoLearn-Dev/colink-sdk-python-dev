@@ -1,9 +1,12 @@
 from setuptools import setup
-import pip
-import os
+import subprocess
+import sys
 import pkg_resources
 
-pip.main(["install", "grpcio-tools==1.45.0"])
+grpc_tools_version = "grpcio-tools==1.48.0"
+subprocess.check_call(
+    [sys.executable, "-m", "pip", "install", grpc_tools_version]
+)  # in order to generate grpc template we must first install grpcio-tools here
 import grpc_tools.protoc
 
 
@@ -41,16 +44,16 @@ def update_import_path_in_pb2_grpc():
 
 update_import_path_in_pb2_grpc()
 
-desc_file=open("README.md",'r')
+desc_file = open("README.md", "r")
 long_description = desc_file.read()
 desc_file.close()
 
 setup(
     name="colink",
-    version="0.1.10",
+    version="0.1.11",
     description="colink python module",
     long_description=long_description,
-    long_description_content_type='text/markdown',
+    long_description_content_type="text/markdown",
     author="Wenjie Qu",
     author_email="",
     packages=["colink"],  # same as name
@@ -59,5 +62,3 @@ setup(
         "pika==1.2.0",
     ],  # external packages as dependencies
 )
-
-

@@ -4,12 +4,17 @@ from colink.sdk_a import (
     CoLink,
     get_time_stamp,
     generate_user,
-    prepare_import_user_signature
+    prepare_import_user_signature,
 )
 
 if __name__ == "__main__":
-    core_jwt = open("./colink-server/host_token.txt", "r").readline()
-    addr = "127.0.0.1:8080"
+    logging.basicConfig(
+        filename="host_import_user.log",
+        filemode="a",
+        level=logging.INFO,
+    )
+    core_jwt = open("./colink-server-dev/host_token.txt", "r").readline()
+    addr = "http://127.0.0.1:8080"
     expiration_timestamp = get_time_stamp() + 86400 * 31
     cl = CoLink(addr, core_jwt)
     pub_key, sec_key = generate_user()

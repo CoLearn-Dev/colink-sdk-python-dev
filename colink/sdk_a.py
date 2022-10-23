@@ -1,3 +1,4 @@
+from importlib.metadata import metadata
 import logging
 import json
 import time
@@ -89,7 +90,7 @@ class CoLink:
     def set_task_id(self, task_id: str):
         self.task_id = task_id
 
-    def get_task_id(self) -> Tuple[str, str]:
+    def get_task_id(self) -> str:
         if len(self.task_id) == 0:
             logging.error("task_id not found")
             return None
@@ -340,7 +341,7 @@ class CoLink:
 
             def address_filter(
                 address,
-            ):  # strange bug: when address starts with 127.0.0.1/0.0.0.0 connect error, but using localhost works 
+            ):  # when address starts with 127.0.0.1/0.0.0.0 connect error, but using localhost works, due to domain cert
                 if address.startswith("127.0.0.1"):
                     return address.replace("127.0.0.1", "localhost")
                 elif address.startswith("0.0.0.0"):
@@ -381,6 +382,16 @@ class CoLink:
             return None
         else:
             return res[0].payload
+
+    def read_keys(
+        self,
+        prefix: str,
+        include_history: bool,
+    ) -> List[CL.StorageEntry]:
+        client = self._grpc_connect(self.core_addr)
+        request = CL.ReadKeysRequest(prefix=prefix, include_history=include_history)
+        response = client.ReadKeys(request, metadata=get_jwt_auth(self.jwt))
+        return response.entries
 
     def read_or_wait(self, key: str) -> bytes:
         res = self.read_entry(key)
@@ -593,6 +604,42 @@ class CoLink:
         else:
             logging.error("Invalid token.")
 
+    def start_protocol_operator(self, protocol_name: str, user_id: str):
+        client = self._grpc_connect(self.core_addr)
+        request = CL.StartProtocolOperatorRequest(
+            protocol_name=protocol_name, user_id=user_id
+        )
+        response = client.StartProtocolOperator(
+            request=request, metadata=get_jwt_auth(self.jwt)
+        )
+        return response.instance_id
+
+    def stop_protocol_operator(self, instance_id: str):
+        client = self._grpc_connect(self.core_addr)
+        request = CL.ProtocolOperatorInstanceId(instance_id=instance_id)
+        client.StopProtocolOperator(request=request, metadata=get_jwt_auth(self.jwt))
+
+    def wait_task(self, task_id: str):
+        task_key = "_internal:tasks:{}".format(task_id)
+        res = self.read_entries([CL.StorageEntry(key_name=task_key)])
+        if res is not None:
+            task = CL.Task.FromString(res[0].payload)
+            if task.status == "finished":
+                return
+            start_timestamp = get_path_timestamp(res[0].key_path) + 1
+        else:
+            start_timestamp = 0
+        queue_name = self.subscribe(task_key, start_timestamp)
+        subscriber = self.new_subscriber(queue_name)
+        while True:
+            data = subscriber.get_next()
+            message = CL.SubscriptionMessage.FromString(data)
+            if message.change_type != "delete":
+                task = CL.Task.FromString(message.payload)
+                if task.status == "finished":
+                    break
+        self.unsubscribe(queue_name)
+
 
 def generate_user() -> Tuple[
     secp256k1.PublicKey, secp256k1.PrivateKey
@@ -605,7 +652,8 @@ def generate_user() -> Tuple[
 def prepare_import_user_signature(
     user_pub_key: secp256k1.PublicKey,
     user_sec_key: secp256k1.PrivateKey,
-    core_pub_key: str,  # directly use string because hard to construct string back to secp256k1.PublicKey
+    # directly use string because hard to construct string back to secp256k1.PublicKey
+    core_pub_key: str,
     expiration_timestamp: int,
 ) -> Tuple[int, str]:
     signature_timestamp = get_time_stamp()
@@ -667,7 +715,7 @@ def byte_to_str(b: bytes):
     return str(b, encoding="utf-8")
 
 
-def get_timestamp(key_path: str) -> int:  # decode path name to get timestamp
+def get_path_timestamp(key_path: str) -> int:  # decode path name to get timestamp
     pos = key_path.rfind("@")
     return int(key_path[pos + 1 :])
 

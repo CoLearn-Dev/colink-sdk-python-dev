@@ -1,8 +1,7 @@
 import sys
 import logging
 import colink as CL
-from colink.sdk_a import CoLink, get_timestamp
-
+from colink.sdk_a import CoLink, get_path_timestamp
 
 if __name__ == "__main__":
     logging.basicConfig(filename="auto_confirm.log", filemode="a", level=logging.INFO)
@@ -26,13 +25,13 @@ if __name__ == "__main__":
             list_entry.payload
         )  # parse colink proto struct from binary
         if len(list_.task_ids_with_key_paths) == 0:
-            start_timestamp = get_timestamp(list_entry.key_path)
+            start_timestamp = get_path_timestamp(list_entry.key_path)
         else:
             start_timestamp = int(1e62)  # get min
             for i in range(len(list_.task_ids_with_key_paths)):
                 start_timestamp = min(
                     start_timestamp,
-                    get_timestamp(list_.task_ids_with_key_paths[i].key_path),
+                    get_path_timestamp(list_.task_ids_with_key_paths[i].key_path),
                 )  # find earliest time stamp
     queue_name = cl.subscribe(latest_key, start_timestamp)
     subscriber = cl.new_subscriber(queue_name)
@@ -53,4 +52,4 @@ if __name__ == "__main__":
             # IMPORTANT: you must check the status of the task received from the subscription.
             if task.status == "waiting":
                 cl.confirm_task(task_id.task_id, True, False, "")
-                logging.info("confirm task", task_id.task_id)
+                logging.info("confirm task {}".format(task_id.task_id))

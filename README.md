@@ -2,7 +2,10 @@
 [![Python](https://img.shields.io/badge/python-3.9%20%7C%203.10-blue.svg)](https://badge.fury.io/py/colink)
 [![PyPI version](https://badge.fury.io/py/colink.svg)](https://badge.fury.io/py/colink)
 
-CoLink Python SDK  provides a Python3 language support toolkit for application developers which allows them to update storage, manage computation requests, and monitor CoLink server status.
+CoLink Python SDK helps both application and protocol developers access the functionalities provided by [the CoLink server](https://github.com/CoLearn-Dev/colink-server-dev).
+
+- For *application developers*, CoLink Python SDK allows them to update storage, manage computation requests, and monitor the CoLink server status.
+- For *protocol developers*, CoLink Python SDK allows them to write CoLink Extensions that extend the functionality of CoLink to support new protocols.
 
 ## Requirements
 
@@ -11,44 +14,30 @@ CoLink Python SDK  provides a Python3 language support toolkit for application d
 
 
 ## Getting started
-We can connect to CoLink server, run protocols, update storage, monitor server status by python SDK. For how to setup a CoLink server, please refer to [colinkctl](https://github.com/CoLearn-Dev/colinkctl).
-
-Assuming that you have `colinkctl` installed, you can first setup up a CoLink server at port `15600` and create 2 users, also start the policy module to accept tasks:
+You can use this SDK to run protocols, update storage, developing protocol operators. Here is a tutorial for you about how to start a greetings task between two users.
+- Set up CoLink server.
+Please refer to [colinkctl](https://github.com/CoLearn-Dev/colinkctl), and run the command below. For the following steps, we assume you are using the default settings in colinkctl.
 ```
 colinkctl enable_dev_env
 ```
-Two users exchange their jwt to each other:
+- Create two new terminals and start protocol operator for two users separately.
 ```
-python3 examples/user_exchange_jwt.py \
-  http://127.0.0.1:15600 \
-  $(cat ~/.colink/user_token.txt)
+python3 examples/protocol_greetings.py \
+  --addr http://127.0.0.1:8080  \
+  --jwt $(sed -n "1,1p" ~/.colink/user_token.txt)
 ```
-Two users run task `greetings`:
+```
+python3 examples/protocol_greetings.py \
+  --addr http://127.0.0.1:8080 \
+  --jwt $(sed -n "2,2p" ~/.colink/user_token.txt)
+```
+- Run task
 ```
 python3 examples/user_run_task.py \
-  http://127.0.0.1:15600 \
+  http://127.0.0.1:8080 \
   $(cat ~/.colink/user_token.txt)
 ```
-Check the output of task creation:
-```
-cat user_run_task.log
-```
-In the current terminal, run the protocol operator of initiator:
-```
-python3 examples/protocol_greetings.py \
-  --addr http://127.0.0.1:15600  \
-  --jwt $(head -n 1 ~/.colink/user_token.txt)
-```
-Create a new terminal, run the protocol operator of receiver:
-```
-python3 examples/protocol_greetings.py \
-  --addr http://127.0.0.1:15600 \
-  --jwt $(tail -n 1 ~/.colink/user_token.txt)
-```
-Check the output of protocol operators:
-```
-cat protocol_greeting.log
-```
+- Check the output in protocol operators' terminals
 ## More examples, for details please refer to [here](https://github.com/CoLearn-Dev/colink-sdk-python-dev/tree/main/examples)
 
 ```
@@ -77,6 +66,12 @@ python3 examples/protocol_greetings.py --addr <address> --jwt <user_jwt>
 ```
 ```
 python3 examples/user_remote_storage.py <address> <user_jwt A> <user_jwt B> <message> # <message> is optional
+```
+```
+python3 examples/user_start_protocol_operator.py <address> <user_jwt> <protocol_name>
+```
+```
+python3 examples/user_stop_protocol_operator.py <address> <user_jwt> <instance_id>
 ```
 ```
 python3 examples/user_lock.py <address> <user_jwt>
