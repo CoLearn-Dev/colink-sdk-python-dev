@@ -58,6 +58,7 @@ setup(
     author_email="",
     packages=["colink"],  # same as name
     install_requires=[
+        grpc_tools_version,
         "secp256k1==0.14.0",
         "pika==1.2.0",
     ],  # external packages as dependencies
