@@ -50,7 +50,7 @@ desc_file.close()
 
 setup(
     name="colink",
-    version="0.1.11",
+    version="0.1.12",
     description="colink python module",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -58,6 +58,7 @@ setup(
     author_email="",
     packages=["colink"],  # same as name
     install_requires=[
+        grpc_tools_version,
         "secp256k1==0.14.0",
         "pika==1.2.0",
     ],  # external packages as dependencies
