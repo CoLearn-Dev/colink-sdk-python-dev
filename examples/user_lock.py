@@ -1,16 +1,12 @@
 import sys
 import logging
-import os
-import copy
 import threading
-import colink as CL
-from colink.sdk_a import decode_jwt_without_validation, CoLink, str_to_byte
+from colink.sdk_a import CoLink, byte_to_int
 
 
 def lock_and_unlock(cl):
     key, rnd_num = cl.lock("example_lock_name")
-    num = cl.read_entry("example_lock_counter")
-    num = int().from_bytes(num, byteorder="little", signed=False)
+    num = byte_to_int(cl.read_entry("example_lock_counter"))
     print(num)
     cl.update_entry(
         "example_lock_counter",

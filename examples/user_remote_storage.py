@@ -1,6 +1,5 @@
 import sys
 import logging
-import os
 import colink as CL
 from colink.sdk_a import decode_jwt_without_validation, CoLink, str_to_byte, byte_to_str
 
