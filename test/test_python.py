@@ -8,7 +8,6 @@ import concurrent.futures
 from typing import List
 import logging
 import sys
-import colink
 from colink.sdk_a import byte_to_str
 
 CORE_ADDR = "127.0.0.1"

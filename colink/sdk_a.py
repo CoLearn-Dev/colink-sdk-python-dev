@@ -1,11 +1,8 @@
-from importlib.metadata import metadata
 import logging
 import json
-from sysconfig import get_path
 import time
 import base64
 from typing import Tuple, List
-from numpy import byte
 import pika
 import grpc
 import secp256k1
