@@ -65,7 +65,6 @@ def run_greetings(port: int, user_num: int):
         for user in users:
             num = random.randrange(1, 2)
             for _ in range(num):
-                threads.append(thread_pool.submit(remote_storage, addr, user))
                 threads.append(thread_pool.submit(run_protocol_greeting, addr, user))
         for th in threads:
             child_processes.append(th.result())
@@ -90,9 +89,7 @@ def run_greetings(port: int, user_num: int):
 def start_core(port, param=[]):
     return subprocess.Popen(
         [
-            "cargo",
-            "run",
-            "--",
+            "./colink-server",
             "--address",
             CORE_ADDR,
             "--port",
@@ -105,27 +102,13 @@ def start_core(port, param=[]):
             MQ_PREFIX,
             *param,
         ],
-        cwd="./colink-server-dev",
+        env={'COLINK_HOME':''},
+        cwd="./colink-server",
         stdout=DEVNULL,
         stderr=DEVNULL,
     )
 
 
-def remote_storage(addr, jwt):
-    return subprocess.Popen(
-        [
-            "cargo",
-            "run",
-            "--",
-            "--addr",
-            addr,
-            "--jwt",
-            jwt,
-        ],
-        cwd="./colink-protocol-remote-storage-dev",
-        stdout=sys.stdout,
-        stderr=DEVNULL,
-    )
 
 
 def host_import_users_and_exchange_guest_jwts(

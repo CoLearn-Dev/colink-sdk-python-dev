@@ -29,6 +29,7 @@ class ProtocolOperator:
         cl = _cl_parse_args()
         operator_funcs = {}
         protocols = set()
+        failed_protocols = set()
         for protocol_and_role, user_func in self.mapping.items():
             if protocol_and_role.endswith(":@init"):
                 protocol_name = protocol_and_role[: len(protocol_and_role) - 6]
@@ -42,12 +43,16 @@ class ProtocolOperator:
                         user_func(cl, None, [])
                     except Exception as e:
                         logging.error("{}: {}.".format(protocol_and_role, e))
-                    cl.update_entry(is_initialized_key, bytes([1]))
+                        failed_protocols.add(protocol_name)
+                    else:
+                        cl.update_entry(is_initialized_key, bytes([1]))
                 cl.unlock(lock)
             else:
                 protocols.add(protocol_and_role[: protocol_and_role.rfind(":")])
                 operator_funcs[protocol_and_role] = user_func
-
+        for protocol_name in failed_protocols:
+            if protocol_name in protocols:
+                protocols.remove(protocol_name)
         for protocol_name in protocols:
             is_initialized_key = "_internal:protocols:{}:_is_initialized".format(
                 protocol_name
