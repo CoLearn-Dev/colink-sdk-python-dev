@@ -25,7 +25,7 @@ if __name__ == "__main__":
     cl = CoLink(addr, host_jwt)
     users = []
     pk, sk = generate_user()
-    _, core_pub_key = cl.request_core_info()
+    _, core_pub_key, _ = cl.request_info()
     signature_timestamp, sig = prepare_import_user_signature(
         pk, sk, core_pub_key, expiration_timestamp
     )
@@ -45,7 +45,7 @@ if __name__ == "__main__":
     clt.update_registries(registries)
     for i in range(num):
         pk, sk = generate_user()
-        _, core_pub_key = cl.request_core_info()
+        _, core_pub_key, _ = cl.request_info()
         signature_timestamp, sig = prepare_import_user_signature(
             pk, sk, core_pub_key, expiration_timestamp
         )

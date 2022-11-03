@@ -134,7 +134,7 @@ class CoLinkProtocol:
                         )
             queue_name = self.cl.subscribe(latest_key, start_timestamp)
             self.cl.create_entry(operator_mq_key, str_to_byte(queue_name))
-        mq_addr, _ = self.cl.request_core_info()
+        mq_addr, _, _ = self.cl.request_info()
         param = pika.connection.URLParameters(url=mq_addr)
         mq = pika.BlockingConnection(param)  # establish rabbitmq connection
         channel = mq.channel()

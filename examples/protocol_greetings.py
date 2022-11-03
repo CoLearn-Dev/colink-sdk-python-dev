@@ -10,15 +10,14 @@ pop = ProtocolOperator(__name__)
 
 @pop.handle("greetings:initiator")
 def run_initiator(cl: CoLink, param: bytes, participants: List[CL.Participant]):
-    logging.info("greetings:initiator protocol operator!")
-    cl.set_variable("test:greeting:output", param, participants[1:])
+    logging.info(f"greetings:initiator protocol operator! {cl.jwt}")
 
 
 @pop.handle("greetings:receiver")
 def run_receiver(cl: CoLink, param: bytes, participants: List[CL.Participant]):
-    logging.info("greetings:receiver protocol operator!")
-    receive_data = cl.get_variable("test:greeting:output", participants[0])
-    cl.create_entry("tasks:{}:output".format(cl.get_task_id()), receive_data)
+    logging.info(f"greetings:receiver protocol operator! {cl.jwt}")
+    # removed using variable transfer in this example, to avoid installing remote storage block for new CoLink server
+    cl.create_entry("tasks:{}:output".format(cl.get_task_id()), param)
 
 
 if __name__ == "__main__":

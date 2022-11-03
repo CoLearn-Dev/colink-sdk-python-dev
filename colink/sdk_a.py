@@ -55,7 +55,7 @@ class CoLink:
         self.ca_cert = ca_certificate
         self._identity = identity
 
-    def request_core_info(self) -> Tuple[str, str]:
+    def request_info(self) -> Tuple[str, str, str]:
         client = self._grpc_connect(self.core_addr)
         try:
             response = client.RequestInfo(
@@ -68,7 +68,7 @@ class CoLink:
             )
             raise e
         else:
-            return response.mq_uri, response.core_public_key
+            return response.mq_uri, response.core_public_key, response.requestor_ip
 
     def import_guest_jwt(self, jwt: str):
         jwt_decoded = decode_jwt_without_validation(
@@ -300,7 +300,7 @@ class CoLink:
         )
 
     def new_subscriber(self, queue_name: str) -> CoLinkSubscriber:
-        (mq_uri, _) = self.request_core_info()
+        (mq_uri, _, _) = self.request_info()
         subscriber = CoLinkSubscriber(mq_uri, queue_name)
         return subscriber
 
