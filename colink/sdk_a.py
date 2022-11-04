@@ -462,7 +462,6 @@ class CoLink:
             remote_key_name=key, payload=payload, is_public=is_public
         )
         payload = params.SerializeToString()
-
         self.run_task("remote_storage.create", payload, participants, False)
 
     def remote_storage_read(
@@ -635,7 +634,6 @@ class CoLink:
             return self.wait_for_applying(
                 timestamp
             )  # Wait for the current timestamp to be applied.
-
         settings.enable = True
         payload = settings.SerializeToString()
 
@@ -657,7 +655,6 @@ class CoLink:
         if not settings.enable:
             self.unlock(lock)
             return  # Return directly here because we only release the lock after the policy module truly stopped.
-
         settings.enable = False
         payload = settings.SerializeToString()
         timestamp = get_path_timestamp(
@@ -681,7 +678,6 @@ class CoLink:
             settings = CL.Settings.FromString(res)
         else:
             settings = CL.Settings()
-
         rule_id = str(uuid.uuid4())
         rule.rule_id = rule_id
         settings.rules.append(rule)
