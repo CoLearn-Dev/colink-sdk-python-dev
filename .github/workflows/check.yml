@@ -23,10 +23,8 @@ jobs:
           eval `ssh-agent`
           ssh-add - <<< "${{ secrets.SSH_KEY }}"
           echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> $GITHUB_ENV
-      - name: Pull and Build Server
-        env:
-          GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"
-        run: bash pull-and-build-server.sh
+      - name: Download Server
+        run: bash download-server.sh
       - name: Install Python
         uses: actions/setup-python@v3
         with:

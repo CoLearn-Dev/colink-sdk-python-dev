@@ -1,15 +1,14 @@
-from importlib.metadata import metadata
 import logging
 import json
 import time
 import base64
 from typing import Tuple, List
-import sys
 import pika
 import grpc
 import secp256k1
 import random
 import copy
+import uuid
 from colink import CoLinkStub
 import colink as CL
 
@@ -53,10 +52,10 @@ class CoLink:
         self.ca_cert = ca_certificate
         self._identity = identity
 
-    def request_core_info(self) -> Tuple[str, str]:
+    def request_info(self) -> Tuple[str, str, str]:
         client = self._grpc_connect(self.core_addr)
         try:
-            response = client.RequestCoreInfo(
+            response = client.RequestInfo(
                 request=CL.Empty(),
                 metadata=get_jwt_auth(self.jwt),
             )
@@ -66,7 +65,7 @@ class CoLink:
             )
             raise e
         else:
-            return response.mq_uri, response.core_public_key
+            return response.mq_uri, response.core_public_key, response.requestor_ip
 
     def import_guest_jwt(self, jwt: str):
         jwt_decoded = decode_jwt_without_validation(
@@ -208,24 +207,6 @@ class CoLink:
         else:
             return response.key_path
 
-    def generate_token(self) -> str:
-        return self.generate_token_with_expiration_time(get_time_stamp() + 86400)
-
-    def generate_token_with_expiration_time(self, expiration_time: int) -> str:
-        client = self._grpc_connect(self.core_addr)
-        try:
-            response = client.GenerateToken(
-                request=CL.GenerateTokenRequest(expiration_time=expiration_time),
-                metadata=get_jwt_auth(self.jwt),
-            )
-        except grpc.RpcError as e:
-            logging.error(
-                f"GenerateToken Received RPC exception: code={e.code()} message={e.details()}"
-            )
-            raise e
-        else:
-            return response.jwt
-
     # The default expiration time is 1 day later. If you want to specify an expiration time, use run_task_with_expiration_time instead.
     def run_task(
         self,
@@ -316,7 +297,7 @@ class CoLink:
         )
 
     def new_subscriber(self, queue_name: str) -> CoLinkSubscriber:
-        (mq_uri, _) = self.request_core_info()
+        (mq_uri, _, _) = self.request_info()
         subscriber = CoLinkSubscriber(mq_uri, queue_name)
         return subscriber
 
@@ -481,7 +462,6 @@ class CoLink:
             remote_key_name=key, payload=payload, is_public=is_public
         )
         payload = params.SerializeToString()
-
         self.run_task("remote_storage.create", payload, participants, False)
 
     def remote_storage_read(
@@ -581,7 +561,7 @@ class CoLink:
         while True:
             payload = rnd_num.to_bytes(length=32, byteorder="little", signed=False)
             try:
-                ret = self.create_entry("_lock:{}".format(key), payload)
+                self.create_entry("_lock:{}".format(key), payload)
             except grpc.RpcError as e:
                 pass
             else:
@@ -595,10 +575,7 @@ class CoLink:
 
     def unlock(self, lock_token: Tuple[str, int]):
         key, rnd_num = lock_token
-        rnd_num_in_storage = self.read_entry("_lock:{}".format(key))
-        rnd_num_in_storage = int().from_bytes(
-            rnd_num_in_storage, byteorder="little", signed=False
-        )
+        rnd_num_in_storage = byte_to_int(self.read_entry("_lock:{}".format(key)))
         if rnd_num_in_storage == rnd_num:
             self.delete_entry("_lock:{}".format(key))
         else:
@@ -637,6 +614,117 @@ class CoLink:
             if message.change_type != "delete":
                 task = CL.Task.FromString(message.payload)
                 if task.status == "finished":
+                    break
+        self.unsubscribe(queue_name)
+
+    def update_jwt(self, new_jwt: str):
+        self.jwt = new_jwt
+
+    def policy_module_start(self):
+        lock = self.lock("_policy_module:settings")
+        res = self.read_entries([CL.StorageEntry(key_name="_policy_module:settings")])
+        if res is not None:
+            settings, timestamp = CL.Settings.FromString(
+                res[0].payload
+            ), get_path_timestamp(res[0].key_path)
+        else:
+            settings, timestamp = CL.Settings(), 0
+        if settings.enable:
+            self.unlock(lock)
+            return self.wait_for_applying(
+                timestamp
+            )  # Wait for the current timestamp to be applied.
+        settings.enable = True
+        payload = settings.SerializeToString()
+
+        timestamp = get_path_timestamp(
+            self.update_entry("_policy_module:settings", payload)
+        )
+        self.unlock(lock)
+        participants = [CL.Participant(user_id=self.get_user_id(), role="local")]
+        self.run_task("policy_module", b"", participants, False)
+        self.wait_for_applying(timestamp)
+
+    def policy_module_stop(self):
+        lock = self.lock("_policy_module:settings")
+        res = self.read_entry("_policy_module:settings")
+        if res is not None:
+            settings = CL.Settings.FromString(res)
+        else:
+            settings = CL.Settings()
+        if not settings.enable:
+            self.unlock(lock)
+            return  # Return directly here because we only release the lock after the policy module truly stopped.
+        settings.enable = False
+        payload = settings.SerializeToString()
+        timestamp = get_path_timestamp(
+            self.update_entry("_policy_module:settings", payload)
+        )
+        res = self.wait_for_applying(timestamp)
+        self.unlock(lock)  # Unlock after the policy module truly stopped.
+
+    def policy_module_get_rules(self) -> List[CL.Rule]:
+        res = self.read_entry("_policy_module:settings")
+        if res is not None:
+            settings = CL.Settings.FromString(res)
+        else:
+            settings = CL.Settings()
+        return settings.rules
+
+    def policy_module_add_rule(self, rule: CL.Rule) -> str:
+        lock = self.lock("_policy_module:settings")
+        res = self.read_entry("_policy_module:settings")
+        if res:
+            settings = CL.Settings.FromString(res)
+        else:
+            settings = CL.Settings()
+        rule_id = str(uuid.uuid4())
+        rule.rule_id = rule_id
+        settings.rules.append(rule)
+        payload = settings.SerializeToString()
+        timestamp = get_path_timestamp(
+            self.update_entry("_policy_module:settings", payload)
+        )
+        self.unlock(lock)
+        if settings.enable:
+            self.wait_for_applying(timestamp)
+        return rule_id
+
+    def policy_module_remove_rule(self, rule_id: str):
+        lock = self.lock("_policy_module:settings")
+        res = self.read_entry("_policy_module:settings")
+        if res:
+            settings = CL.Settings.FromString(res)
+        else:
+            settings = CL.Settings()
+        del settings.rules[:]
+        settings.rules.extend([x for x in settings.rules if x.rule_id != rule_id])
+        payload = settings.SerializeToString()
+        timestamp = get_path_timestamp(
+            self.update_entry("_policy_module:settings", payload)
+        )
+        self.unlock(lock)
+        if settings.enable:
+            self.wait_for_applying(timestamp)
+
+    def wait_for_applying(self, timestamp: int):
+        key = "_policy_module:applied_settings_timestamp"
+        res = self.read_entries([CL.StorageEntry(key_name=key)])
+        if res is not None:
+            applied_settings_timestamp = byte_to_int(res[0].payload)
+            if applied_settings_timestamp >= timestamp:
+                return
+            start_timestamp = get_path_timestamp(res[0].key_path) + 1
+        else:
+            start_timestamp = 0
+        queue_name = self.subscribe(key, start_timestamp)
+        subscriber = self.new_subscriber(queue_name)
+        while True:
+            data = subscriber.get_next()
+            message = CL.SubscriptionMessage.FromString(data)
+            if message.change_type != "delete":
+                applied_settings_timestamp = byte_to_int(message.payload)
+                if applied_settings_timestamp >= timestamp:
                     break
         self.unsubscribe(queue_name)
 
@@ -718,6 +806,10 @@ def byte_to_str(b: bytes):
 def get_path_timestamp(key_path: str) -> int:  # decode path name to get timestamp
     pos = key_path.rfind("@")
     return int(key_path[pos + 1 :])
+
+
+def byte_to_int(b: bytes, byteorder: str = "little", signed: bool = "False"):
+    return int().from_bytes(b, byteorder=byteorder, signed=signed)
 
 
 def get_jwt_auth(

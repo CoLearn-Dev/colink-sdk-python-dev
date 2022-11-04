@@ -4,7 +4,6 @@ import pika
 import logging
 from hashlib import sha256
 import concurrent.futures
-from concurrent.futures._base import TimeoutError
 import colink as CL
 from colink.sdk_a import byte_to_str, str_to_byte, CoLink, get_path_timestamp
 
@@ -29,6 +28,7 @@ class ProtocolOperator:
         cl = _cl_parse_args()
         operator_funcs = {}
         protocols = set()
+        failed_protocols = set()
         for protocol_and_role, user_func in self.mapping.items():
             if protocol_and_role.endswith(":@init"):
                 protocol_name = protocol_and_role[: len(protocol_and_role) - 6]
@@ -42,12 +42,16 @@ class ProtocolOperator:
                         user_func(cl, None, [])
                     except Exception as e:
                         logging.error("{}: {}.".format(protocol_and_role, e))
-                    cl.update_entry(is_initialized_key, bytes([1]))
+                        failed_protocols.add(protocol_name)
+                    else:
+                        cl.update_entry(is_initialized_key, bytes([1]))
                 cl.unlock(lock)
             else:
                 protocols.add(protocol_and_role[: protocol_and_role.rfind(":")])
                 operator_funcs[protocol_and_role] = user_func
-
+        for protocol_name in failed_protocols:
+            if protocol_name in protocols:
+                protocols.remove(protocol_name)
         for protocol_name in protocols:
             is_initialized_key = "_internal:protocols:{}:_is_initialized".format(
                 protocol_name
@@ -129,7 +133,7 @@ class CoLinkProtocol:
                         )
             queue_name = self.cl.subscribe(latest_key, start_timestamp)
             self.cl.create_entry(operator_mq_key, str_to_byte(queue_name))
-        mq_addr, _ = self.cl.request_core_info()
+        mq_addr, _, _ = self.cl.request_info()
         param = pika.connection.URLParameters(url=mq_addr)
         mq = pika.BlockingConnection(param)  # establish rabbitmq connection
         channel = mq.channel()

@@ -65,6 +65,14 @@ python3 examples/get_next_greeting_message.py <address> <user_jwt>
 python3 examples/protocol_greetings.py --addr <address> --jwt <user_jwt> 
 ```
 ```
+python3 examples/protocol_greetings_with_init_func.py --addr <address> --jwt <user_jwt>
+```
+
+```
+python3 examples/protocol_test_variable_transfer.py --addr <address> --jwt <user_jwt> # start remote storage to enable this protocol
+```
+
+```
 python3 examples/user_remote_storage.py <address> <user_jwt A> <user_jwt B> <message> # <message> is optional
 ```
 ```
