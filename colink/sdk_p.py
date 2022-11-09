@@ -2,8 +2,8 @@ import os
 import argparse
 import pika
 import logging
-from hashlib import sha256
 import concurrent.futures
+from threading import Thread
 import colink as CL
 from colink import CoLink
 from colink.sdk_a import byte_to_str, str_to_byte, get_path_timestamp
@@ -25,8 +25,9 @@ class ProtocolOperator:
 
         return decorator
 
-    def run(self):
-        cl = _cl_parse_args()
+    def run(self, cl: CoLink = None):
+        if cl is None:
+            cl = _cl_parse_args()
         operator_funcs = {}
         protocols = set()
         failed_protocols = set()
@@ -80,6 +81,10 @@ class ProtocolOperator:
                 )  # kill all threads in thread pool
                 raise e
         return
+
+    def run_attach(self, cl: CoLink):
+        thread = Thread(target=self.run, args=(cl,))
+        thread.start()
 
 
 class CoLinkProtocol:
@@ -194,7 +199,3 @@ def _cl_parse_args() -> CoLink:
     if cert != "" and key != "":
         cl.identity(cert, key)
     return cl
-
-
-def _sha256(s):
-    return sha256(s.encode("utf-8")).hexdigest()

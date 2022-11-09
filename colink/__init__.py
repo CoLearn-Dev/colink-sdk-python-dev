@@ -1,3 +1,4 @@
+from typing import Tuple
 from colink.colink_pb2 import *
 from colink.colink_pb2_grpc import *
 from colink.colink_remote_storage_pb2 import *
@@ -6,7 +7,6 @@ from colink.colink_policy_module_pb2 import *
 from colink.colink_policy_module_pb2_grpc import *
 from colink.colink_registry_pb2 import *
 from colink.colink_registry_pb2_grpc import *
-from typing import Tuple
 from .sdk_a import *
 
 
@@ -77,3 +77,4 @@ class CoLink:
         generate_user_and_import,
         switch_to_generated_user,
     )
+    from .wait_user_init_func import wait_user_init
