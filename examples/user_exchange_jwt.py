@@ -1,6 +1,6 @@
 import sys
+from colink import CoLink
 from colink.sdk_a import (
-    CoLink,
     get_time_stamp,
     generate_user,
     prepare_import_user_signature,

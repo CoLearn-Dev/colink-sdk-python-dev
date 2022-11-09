@@ -1,7 +1,7 @@
 import logging
 from typing import List
 import colink as CL
-from colink.sdk_a import CoLink
+from colink import CoLink
 from colink.sdk_p import ProtocolOperator
 
 pop = ProtocolOperator(__name__)

@@ -1,7 +1,8 @@
 import sys
 import logging
 import threading
-from colink.sdk_a import CoLink, byte_to_int
+from colink import CoLink
+from colink.sdk_a import byte_to_int
 
 
 def lock_and_unlock(cl):

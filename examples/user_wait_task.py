@@ -1,6 +1,7 @@
 import sys
 import colink as CL
-from colink.sdk_a import CoLink, decode_jwt_without_validation, str_to_byte
+from colink import CoLink
+from colink.sdk_a import decode_jwt_without_validation, str_to_byte
 
 if __name__ == "__main__":
     addr = sys.argv[1]
@@ -9,7 +10,8 @@ if __name__ == "__main__":
     cl = CoLink(addr, jwt)
     participants = [
         CL.Participant(
-            user_id=decode_jwt_without_validation(jwt).user_id, role="query_from_registries"
+            user_id=decode_jwt_without_validation(jwt).user_id,
+            role="query_from_registries",
         )
     ]
     task_id = cl.run_task("registry", str_to_byte(target_user), participants, False)

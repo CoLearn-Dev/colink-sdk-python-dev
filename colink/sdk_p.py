@@ -5,7 +5,8 @@ import logging
 from hashlib import sha256
 import concurrent.futures
 import colink as CL
-from colink.sdk_a import byte_to_str, str_to_byte, CoLink, get_path_timestamp
+from colink import CoLink
+from colink.sdk_a import byte_to_str, str_to_byte, get_path_timestamp
 
 
 def thread_func(protocol_and_role, cl, user_func):

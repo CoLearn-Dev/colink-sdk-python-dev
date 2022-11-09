@@ -1,6 +1,6 @@
 import sys
 import logging
-from colink.sdk_a import CoLink
+from colink import CoLink
 
 if __name__ == "__main__":
     logging.basicConfig(

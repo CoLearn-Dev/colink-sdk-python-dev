@@ -2,7 +2,8 @@ import sys
 import logging
 from typing import List
 import colink as CL
-from colink.sdk_a import CoLink, byte_to_str
+from colink import CoLink
+from colink.sdk_a import byte_to_str
 from colink.sdk_p import ProtocolOperator
 
 pop = ProtocolOperator(__name__)
