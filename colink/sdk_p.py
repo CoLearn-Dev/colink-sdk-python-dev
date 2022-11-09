@@ -84,6 +84,7 @@ class ProtocolOperator:
 
     def run_attach(self, cl: CoLink):
         thread = Thread(target=self.run, args=(cl,))
+        thread.setDaemon(True)
         thread.start()
 
 

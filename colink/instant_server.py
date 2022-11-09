@@ -74,12 +74,11 @@ class InstantServer:
         )
 
     def __del__(self):
-        print("deconstruct!")
         subprocess.Popen(
             ["pkill", "-9", "-p", str(self.process.pid)],
             stdout=DEVNULL,
             stderr=DEVNULL,
-        )
+        ).wait()
         self.process.kill()
 
         colink_home = get_colink_home()
