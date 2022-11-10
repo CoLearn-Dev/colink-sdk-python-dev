@@ -22,4 +22,3 @@ def wait_user_init(self):
         if message.change_type != "delete" and message.payload[0] == 1:
             break
         self.unsubscribe(queue_name)
-    print('wait user init finish!')

@@ -9,4 +9,5 @@ def update_registries(self, registries: CL.Registries):
         )
     ]
     payload = registries.SerializeToString()
-    self.run_task("registry", payload, participants, False)
+    task_id = self.run_task("registry", payload, participants, False)
+    self.wait_task(task_id)
