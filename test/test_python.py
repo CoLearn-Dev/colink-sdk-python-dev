@@ -59,7 +59,7 @@ def run_greetings(port: int, user_num: int):
                 thread_pool.submit(run_auto_confirm, addr, users[i], "greetings")
             )
         for user in users:
-            num = random.randrange(1, 4)
+            num = random.randrange(1, 2)
             for _ in range(num):
                 threads.append(thread_pool.submit(run_protocol_greeting, addr, user))
         for th in threads:

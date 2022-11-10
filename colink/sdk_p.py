@@ -70,7 +70,9 @@ class ProtocolOperator:
         for protocol_and_role in self.mapping.keys():  # insert user func to map
             user_func = self.mapping[protocol_and_role]
             t = threading.Thread(
-                target=thread_func, args=(q, protocol_and_role, cl, user_func), daemon=True
+                target=thread_func,
+                args=(q, protocol_and_role, cl, user_func),
+                daemon=True,
             )
             threads.append(t)
         for t in threads:
@@ -142,7 +144,7 @@ class CoLinkProtocol:
                         )
             queue_name = self.cl.subscribe(latest_key, start_timestamp)
             self.cl.create_entry(operator_mq_key, str_to_byte(queue_name))
-        mq_addr, _, _ = self.cl.request_info()
+        mq_addr = self.cl.request_info().mq_uri
         param = pika.connection.URLParameters(url=mq_addr)
         mq = pika.BlockingConnection(param)  # establish rabbitmq connection
         channel = mq.channel()

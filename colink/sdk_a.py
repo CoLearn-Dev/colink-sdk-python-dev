@@ -18,6 +18,16 @@ class JWT:
         self.exp = exp
 
 
+class CoLinkInfo:
+    def __init__(
+        self, mq_uri: str, core_public_key: bytes, requestor_ip: str, version: str
+    ):
+        self.mq_uri = mq_uri
+        self.core_public_key = core_public_key
+        self.requestor_ip = requestor_ip
+        self.version = version
+
+
 class CoLinkSubscriber:
     def __init__(self, mq_uri: str, queue_name: str):
         self.uri = mq_uri
@@ -36,7 +46,7 @@ class CoLinkSubscriber:
             return body
 
 
-def request_info(self) -> Tuple[str, str, str]:
+def request_info(self) -> CoLinkInfo:
     client = self._grpc_connect(self.core_addr)
     try:
         response = client.RequestInfo(
@@ -49,7 +59,12 @@ def request_info(self) -> Tuple[str, str, str]:
         )
         raise e
     else:
-        return response.mq_uri, response.core_public_key, response.requestor_ip
+        return CoLinkInfo(
+            response.mq_uri,
+            response.core_public_key,
+            response.requestor_ip,
+            response.version,
+        )
 
 
 def import_guest_jwt(self, jwt: str):
@@ -297,7 +312,7 @@ def unsubscribe(self, queue_name: str):
 
 
 def new_subscriber(self, queue_name: str) -> CoLinkSubscriber:
-    (mq_uri, _, _) = self.request_info()
+    mq_uri = self.request_info().mq_uri
     subscriber = CoLinkSubscriber(mq_uri, queue_name)
     return subscriber
 

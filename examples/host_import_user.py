@@ -18,7 +18,7 @@ if __name__ == "__main__":
     expiration_timestamp = get_time_stamp() + 86400 * 31
     cl = CoLink(addr, core_jwt)
     pub_key, sec_key = generate_user()
-    _, core_pub_key, _ = cl.request_info()
+    core_pub_key = cl.request_info().core_public_key
     signature_timestamp, sig = prepare_import_user_signature(
         pub_key, sec_key, core_pub_key, expiration_timestamp
     )

@@ -10,7 +10,7 @@ def generate_user_and_import(self) -> str:
     auth_content = decode_jwt_without_validation(self.jwt)
     expiration_timestamp = auth_content.exp
     pk, sk = generate_user()
-    _, core_pub_key, _ = self.request_info()
+    core_pub_key = self.request_info().core_public_key
     signature_timestamp, sig = prepare_import_user_signature(
         pk, sk, core_pub_key, expiration_timestamp
     )

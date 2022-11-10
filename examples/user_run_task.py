@@ -25,7 +25,7 @@ if __name__ == "__main__":
         ),
     ]
     cl = CoLink(addr, jwt_a)
-    _, core_pub_key, _ = cl.request_info()
+    core_pub_key = cl.request_info().core_public_key
     task_id = cl.run_task("greetings", str_to_byte(msg), participants, True)
     logging.info(
         "Task %s has been created, but it will remain in waiting status until the protocol starts.",
