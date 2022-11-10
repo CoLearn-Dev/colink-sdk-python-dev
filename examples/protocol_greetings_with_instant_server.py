@@ -3,7 +3,7 @@ from typing import List
 import colink as CL
 from colink import CoLink
 from colink.instant_server import InstantServer
-from colink.sdk_a import str_to_byte, byte_to_str
+from colink.sdk_a import str_to_byte, byte_to_str, decode_jwt_without_validation
 from colink.sdk_p import ProtocolOperator
 
 pop = ProtocolOperator(__name__)
@@ -24,15 +24,14 @@ if __name__ == "__main__":
     is0 = InstantServer.new()
     is1 = InstantServer.new()
     cl0 = is0.get_colink().switch_to_generated_user()
-    cl1 = is0.get_colink().switch_to_generated_user()
+    cl1 = is1.get_colink().switch_to_generated_user()
     pop.run_attach(cl0)
     pop.run_attach(cl1)
-    users = [cl0, cl1]
-    for i in range(2):
-        for j in range(2):
-            if i != j:
-                users[i].import_guest_jwt(users[j].jwt)
-                users[i].import_core_addr(users[j].get_user_id(), users[j].core_addr)
+    addr = "https://test.registry.colearn.cloud"
+    jwt = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJwcml2aWxlZ2UiOiJ1c2VyIiwidXNlcl9pZCI6IjAzM2YxMWM0YmFkYTMzOGFlZmQ2MTFiYTlmYWM1ZTU2YzA2ZDc2MWM1NjA3MWRiNWZiZDJiMWI1MGIyODcwOTBiNSIsImV4cCI6MTY5OTU4Nzc1MH0.gv0TzjjTkj3NHVeBl2WyPvBXPgOxYTfyOXiaOu_PRE4"
+    regist = CoLink(addr, jwt)
+    byt=regist.read_entry(f'_remote_storage:public:{decode_jwt_without_validation(cl0.jwt).user_id}:_registry:user_record')
+    print(byt)
     participants = [
         CL.Participant(user_id=cl0.get_user_id(), role="initiator"),
         CL.Participant(user_id=cl1.get_user_id(), role="receiver"),

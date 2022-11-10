@@ -2,16 +2,21 @@ import os
 import argparse
 import pika
 import logging
-import concurrent.futures
+import queue
+import threading
 from threading import Thread
 import colink as CL
 from colink import CoLink
 from colink.sdk_a import byte_to_str, str_to_byte, get_path_timestamp
 
 
-def thread_func(protocol_and_role, cl, user_func):
-    cl_app = CoLinkProtocol(protocol_and_role, cl, user_func)
-    cl_app.start()
+def thread_func(q, protocol_and_role, cl, user_func):
+    try:
+        cl_app = CoLinkProtocol(protocol_and_role, cl, user_func)
+        cl_app.start()
+    except Exception as e:
+        q.put(e)
+        return
 
 
 class ProtocolOperator:
@@ -60,26 +65,23 @@ class ProtocolOperator:
             )
             cl.update_entry(is_initialized_key, bytes([1]))
 
-        thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=64)
         threads = []
+        q = queue.Queue()
         for protocol_and_role in self.mapping.keys():  # insert user func to map
             user_func = self.mapping[protocol_and_role]
-            threads.append(
-                thread_pool.submit(thread_func, protocol_and_role, cl, user_func)
+            t = threading.Thread(
+                target=thread_func, args=(q, protocol_and_role, cl, user_func), daemon=True
             )
-        concurrent.futures.wait(
-            threads, return_when=concurrent.futures.FIRST_EXCEPTION
-        )  # wait until first exception occurs
+            threads.append(t)
         for t in threads:
-            try:
-                t.result(timeout=0.001)  # try if t has exception occur
-            except concurrent.futures.TimeoutError:
-                pass
-            except Exception as e:  # found the thread where exception occurs
-                thread_pool.shutdown(
-                    wait=False, cancel_futures=True
-                )  # kill all threads in thread pool
-                raise e
+            t.start()
+        while True:
+            if q.empty():
+                if threading.active_count() == 1:
+                    break
+            else:
+                err = q.get()
+                raise err
         return
 
     def run_attach(self, cl: CoLink):
