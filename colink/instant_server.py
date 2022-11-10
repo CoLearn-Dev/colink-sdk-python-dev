@@ -6,6 +6,7 @@ import uuid
 import random
 import time
 import socket
+import atexit
 from colink import CoLink
 
 
@@ -15,6 +16,7 @@ class InstantServer:
         self.port = port
         self.host_token = host_token
         self.process = process
+        atexit.register(self.__del)
 
     @staticmethod
     def new():
@@ -73,14 +75,11 @@ class InstantServer:
             process=child,
         )
 
-    def __del__(self):
+    def __del(self):
         subprocess.Popen(
-            ["pkill", "-9", "-p", str(self.process.pid)],
-            stdout=DEVNULL,
-            stderr=DEVNULL,
+            ["pkill", "-9", "-P", str(self.process.pid)], stdout=DEVNULL, stderr=DEVNULL
         ).wait()
         self.process.kill()
-
         colink_home = get_colink_home()
         working_dir = os.path.join(colink_home, "instant_servers", self.id)
         shutil.rmtree(working_dir)
