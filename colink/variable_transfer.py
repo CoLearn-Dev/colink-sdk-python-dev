@@ -1,12 +1,12 @@
 import logging
 from typing import List
 import colink as CL
+
+
 def set_variable(self, key: str, payload: bytes, receivers: List[CL.Participant]):
     if self.task_id is None:
         logging.error("set_variable task_id not found")
-    new_participants = [
-        CL.Participant(user_id=self.get_user_id(), role="requester")
-    ]
+    new_participants = [CL.Participant(user_id=self.get_user_id(), role="requester")]
     for p in receivers:
         if p.user_id == self.get_user_id():
             self.create_entry(
@@ -28,6 +28,7 @@ def set_variable(self, key: str, payload: bytes, receivers: List[CL.Participant]
     )
     payload = params.SerializeToString()
     self.run_task("remote_storage.create", payload, new_participants, False)
+
 
 def get_variable(self, key: str, sender: CL.Participant) -> bytes:
     if self.task_id is None:

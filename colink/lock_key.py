@@ -5,8 +5,10 @@ import grpc
 from typing import Tuple
 from colink.sdk_a import byte_to_int
 
+
 def lock(self, key: str) -> Tuple[str, int]:
     return self.lock_with_retry_time(key, 100)
+
 
 def lock_with_retry_time(
     self,
@@ -29,6 +31,7 @@ def lock_with_retry_time(
         if sleep_time_cap > retry_time_cap_in_ms:
             sleep_time_cap = retry_time_cap_in_ms
     return (key, rnd_num)
+
 
 def unlock(self, lock_token: Tuple[str, int]):
     key, rnd_num = lock_token

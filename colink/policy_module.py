@@ -2,6 +2,8 @@ import uuid
 from typing import List
 import colink as CL
 from colink.sdk_a import get_path_timestamp, byte_to_int
+
+
 def policy_module_start(self):
     lock = self.lock("_policy_module:settings")
     res = self.read_entries([CL.StorageEntry(key_name="_policy_module:settings")])
@@ -27,6 +29,7 @@ def policy_module_start(self):
     self.run_task("policy_module", b"", participants, False)
     self.wait_for_applying(timestamp)
 
+
 def policy_module_stop(self):
     lock = self.lock("_policy_module:settings")
     res = self.read_entry("_policy_module:settings")
@@ -45,6 +48,7 @@ def policy_module_stop(self):
     res = self.wait_for_applying(timestamp)
     self.unlock(lock)  # Unlock after the policy module truly stopped.
 
+
 def policy_module_get_rules(self) -> List[CL.Rule]:
     res = self.read_entry("_policy_module:settings")
     if res is not None:
@@ -52,6 +56,7 @@ def policy_module_get_rules(self) -> List[CL.Rule]:
     else:
         settings = CL.Settings()
     return settings.rules
+
 
 def policy_module_add_rule(self, rule: CL.Rule) -> str:
     lock = self.lock("_policy_module:settings")
@@ -72,6 +77,7 @@ def policy_module_add_rule(self, rule: CL.Rule) -> str:
         self.wait_for_applying(timestamp)
     return rule_id
 
+
 def policy_module_remove_rule(self, rule_id: str):
     lock = self.lock("_policy_module:settings")
     res = self.read_entry("_policy_module:settings")
@@ -88,6 +94,7 @@ def policy_module_remove_rule(self, rule_id: str):
     self.unlock(lock)
     if settings.enable:
         self.wait_for_applying(timestamp)
+
 
 def wait_for_applying(self, timestamp: int):
     key = "_policy_module:applied_settings_timestamp"
