@@ -52,7 +52,7 @@ if __name__ == "__main__":
         print(byte_to_str(message.payload))
     else:
         logging.error("Receive delete change_type.")
-
+        print("Error: Receive delete change_type.")
     # delete
     cl.remote_storage_delete([user_id_b], "remote_storage_demo", False)
 
@@ -63,3 +63,4 @@ if __name__ == "__main__":
         print("Deleted")
     else:
         logging.error("Receive non-delete change_type.")
+        print("Error: Receive non-delete change_type.")
