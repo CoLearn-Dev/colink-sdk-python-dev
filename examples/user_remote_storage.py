@@ -1,8 +1,7 @@
 import sys
 import logging
 import colink as CL
-from colink import CoLink
-from colink.sdk_a import decode_jwt_without_validation, str_to_byte, byte_to_str
+from colink import CoLink, decode_jwt_without_validation, str_to_byte, byte_to_str
 
 if __name__ == "__main__":
     logging.basicConfig(filename="user_run_task.log", filemode="a", level=logging.INFO)

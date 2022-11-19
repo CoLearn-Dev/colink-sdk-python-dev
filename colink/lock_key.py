@@ -3,7 +3,7 @@ import time
 import logging
 import grpc
 from typing import Tuple
-from colink.sdk_a import byte_to_int
+from .application import byte_to_int
 
 
 def lock(self, key: str) -> Tuple[str, int]:
@@ -40,3 +40,4 @@ def unlock(self, lock_token: Tuple[str, int]):
         self.delete_entry("_lock:{}".format(key))
     else:
         logging.error("Invalid token.")
+        raise Exception("Invalid token.")

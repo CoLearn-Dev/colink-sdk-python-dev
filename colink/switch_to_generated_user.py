@@ -1,5 +1,4 @@
-from colink import CoLink
-from colink.sdk_a import (
+from .application import (
     decode_jwt_without_validation,
     generate_user,
     prepare_import_user_signature,
@@ -18,6 +17,6 @@ def generate_user_and_import(self) -> str:
 
 
 def switch_to_generated_user(self):
-    self.__init__(coreaddr=self.core_addr, jwt=self.generate_user_and_import())
+    self.update_jwt(self.generate_user_and_import())
     self.wait_user_init()
     return self

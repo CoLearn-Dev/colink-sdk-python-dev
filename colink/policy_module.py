@@ -1,7 +1,7 @@
 import uuid
 from typing import List
 import colink as CL
-from colink.sdk_a import get_path_timestamp, byte_to_int
+from .application import get_path_timestamp, byte_to_int
 
 
 def policy_module_start(self):

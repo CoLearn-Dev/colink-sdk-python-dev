@@ -16,7 +16,7 @@ class InstantServer:
         self.port = port
         self.host_token = host_token
         self.process = process
-        atexit.register(self.__del)
+        atexit.register(self.clean)
 
     @staticmethod
     def new():
@@ -29,7 +29,7 @@ class InstantServer:
                     "-c",
                     'bash -c "$(curl -fsSL https://raw.githubusercontent.com/CoLearn-Dev/colinkctl/main/install_colink.sh)"',
                 ],
-            )
+            ).wait()
         instant_server_id = str(uuid.uuid4())
         port = random.randint(10000, 20000)
         while socket.socket().connect_ex(("127.0.0.1", port)) == 0:
@@ -75,7 +75,7 @@ class InstantServer:
             process=child,
         )
 
-    def __del(self):
+    def clean(self):
         subprocess.Popen(
             ["pkill", "-9", "-P", str(self.process.pid)], stdout=DEVNULL, stderr=DEVNULL
         ).wait()

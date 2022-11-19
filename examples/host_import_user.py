@@ -1,11 +1,5 @@
-import sys
 import logging
-from colink import CoLink
-from colink.sdk_a import (
-    get_time_stamp,
-    generate_user,
-    prepare_import_user_signature,
-)
+from colink import CoLink, get_time_stamp, generate_user, prepare_import_user_signature
 
 if __name__ == "__main__":
     logging.basicConfig(

@@ -1,6 +1,5 @@
 import sys
-from colink import CoLink
-from colink.sdk_a import decode_jwt_without_validation
+from colink import CoLink, decode_jwt_without_validation
 
 if __name__ == "__main__":
     addr = sys.argv[1]

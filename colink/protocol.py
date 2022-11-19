@@ -5,9 +5,9 @@ import logging
 import queue
 import threading
 from threading import Thread
+from .application import byte_to_str, str_to_byte, get_path_timestamp
 import colink as CL
 from colink import CoLink
-from colink.sdk_a import byte_to_str, str_to_byte, get_path_timestamp
 
 
 def thread_func(q, protocol_and_role, cl, user_func):
@@ -16,7 +16,6 @@ def thread_func(q, protocol_and_role, cl, user_func):
         cl_app.start()
     except Exception as e:
         q.put(e)
-        return
 
 
 class ProtocolOperator:
@@ -84,7 +83,6 @@ class ProtocolOperator:
             else:
                 err = q.get()
                 raise err
-        return
 
     def run_attach(self, cl: CoLink):
         thread = Thread(target=self.run, args=(cl,), daemon=True)
@@ -147,7 +145,7 @@ class CoLinkProtocol:
         param = pika.connection.URLParameters(url=mq_addr)
         mq = pika.BlockingConnection(param)  # establish rabbitmq connection
         channel = mq.channel()
-        for method, properties, body in channel.consume(queue_name):
+        for method, _, body in channel.consume(queue_name):
             channel.basic_ack(method.delivery_tag)
             data = body
             message = CL.SubscriptionMessage.FromString(data)
@@ -177,11 +175,10 @@ class CoLinkProtocol:
                             )
                             raise e
                         self.cl.finish_task(task.task_id)
-
                         logging.info("finnish task:%s", task.task_id)
                 else:
-
                     logging.error("Pull Task Error.")
+                    raise Exception("Pull Task Error.")
 
 
 def _cl_parse_args() -> CoLink:

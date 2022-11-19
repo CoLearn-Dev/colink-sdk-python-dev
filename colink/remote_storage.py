@@ -52,8 +52,8 @@ def remote_storage_read(
         data = self.read_or_wait("tasks:{}:output".format(task_id))
         return data
     else:
-        logging.error("remote_storage.read: status_code: {}".format(status[0]))
-        return None
+        logging.error(f"remote_storage.read: status_code: {status[0]}")
+        raise Exception(f"remote_storage.read: status_code: {status[0]}")
 
 
 def remote_storage_update(

@@ -1,5 +1,5 @@
 import colink as CL
-from colink.sdk_a import get_path_timestamp
+from .application import get_path_timestamp
 
 
 def wait_task(self, task_id: str):

@@ -2,7 +2,7 @@ import logging
 import json
 import time
 import base64
-from typing import Tuple, List
+from typing import Tuple, List, Union
 import pika
 import grpc
 import secp256k1
@@ -37,7 +37,7 @@ class CoLinkSubscriber:
         self.channel = mq.channel()
 
     def get_next(self) -> bytes:
-        for method, properties, body in self.channel.consume(
+        for method, _, body in self.channel.consume(
             self.queue_name
         ):  # get the first package from queue then return
             self.channel.basic_ack(
@@ -95,7 +95,7 @@ def set_task_id(self, task_id: str):
 def get_task_id(self) -> str:
     if len(self.task_id) == 0:
         logging.error("task_id not found")
-        return None
+        raise Exception("task_id not found")
     return copy.deepcopy(self.task_id)
 
 
@@ -216,31 +216,17 @@ def delete_entry(self, key_name: str) -> str:
         return response.key_path
 
 
-# The default expiration time is 1 day later. If you want to specify an expiration time, use run_task_with_expiration_time instead.
+# The default expiration time is 1 day later.
 def run_task(
     self,
     protocol_name: str,
     protocol_param: bytes,
     participants: List[CL.Participant],
     require_agreement: bool,
+    expiration_time: Union[int, None] = None,
 ) -> str:
-    return self.run_task_with_expiration_time(
-        protocol_name,
-        protocol_param,
-        participants,
-        require_agreement,
-        get_time_stamp() + 86400,
-    )
-
-
-def run_task_with_expiration_time(
-    self,
-    protocol_name: str,
-    protocol_param: bytes,
-    participants: List[CL.Participant],
-    require_agreement: bool,
-    expiration_time: int,
-) -> str:
+    if expiration_time is None:
+        expiration_time = get_time_stamp() + 86400
     client = self._grpc_connect(self.core_addr)
     task = CL.Task(
         protocol_name=protocol_name,
@@ -315,22 +301,6 @@ def new_subscriber(self, queue_name: str) -> CoLinkSubscriber:
     mq_uri = self.request_info().mq_uri
     subscriber = CoLinkSubscriber(mq_uri, queue_name)
     return subscriber
-
-
-def ca_certificate(self, ca_certificate: str):
-    f_ca = open(ca_certificate, "rb")
-    self.ca_cert = f_ca.read()
-    f_ca.close()
-
-
-def identity(self, client_cert: str, client_key: str):
-    f_cert = open(client_cert, "rb")
-    client_cert = f_cert.read()
-    f_cert.close()
-    f_key = open(client_key, "rb")
-    client_key = f_key.read()
-    f_key.close()
-    self._identity = (client_cert, client_key)
 
 
 def _grpc_connect(
@@ -415,10 +385,6 @@ def stop_protocol_operator(self, instance_id: str):
     client = self._grpc_connect(self.core_addr)
     request = CL.ProtocolOperatorInstanceId(instance_id=instance_id)
     client.StopProtocolOperator(request=request, metadata=get_jwt_auth(self.jwt))
-
-
-def update_jwt(self, new_jwt: str):
-    self.jwt = new_jwt
 
 
 def generate_user() -> Tuple[

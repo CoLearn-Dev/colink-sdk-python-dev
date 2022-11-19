@@ -1,13 +1,13 @@
 from typing import Tuple
 from colink.colink_pb2 import *
-from colink.colink_pb2_grpc import *
+from colink.colink_pb2_grpc import CoLinkStub, CoLinkServicer
 from colink.colink_remote_storage_pb2 import *
 from colink.colink_remote_storage_pb2_grpc import *
 from colink.colink_policy_module_pb2 import *
 from colink.colink_policy_module_pb2_grpc import *
 from colink.colink_registry_pb2 import *
 from colink.colink_registry_pb2_grpc import *
-from .sdk_a import *
+from .application import *
 
 
 class CoLink:
@@ -24,7 +24,24 @@ class CoLink:
         self.ca_cert = ca_certificate
         self._identity = identity
 
-    from .sdk_a import (
+    def ca_certificate(self, ca_certificate: str):
+        f_ca = open(ca_certificate, "rb")
+        self.ca_cert = f_ca.read()
+        f_ca.close()
+
+    def identity(self, client_cert: str, client_key: str):
+        f_cert = open(client_cert, "rb")
+        client_cert = f_cert.read()
+        f_cert.close()
+        f_key = open(client_key, "rb")
+        client_key = f_key.read()
+        f_key.close()
+        self._identity = (client_cert, client_key)
+
+    def update_jwt(self, new_jwt: str):
+        self.jwt = new_jwt
+
+    from .application import (
         request_info,
         import_guest_jwt,
         import_core_addr,
@@ -39,20 +56,16 @@ class CoLink:
         update_entry,
         delete_entry,
         run_task,
-        run_task_with_expiration_time,
         confirm_task,
         finish_task,
         subscribe,
         unsubscribe,
         new_subscriber,
-        ca_certificate,
-        identity,
         _grpc_connect,
         read_keys,
         get_user_id,
         start_protocol_operator,
         stop_protocol_operator,
-        update_jwt,
     )
     from .policy_module import (
         policy_module_start,
@@ -68,7 +81,7 @@ class CoLink:
         remote_storage_delete,
     )
     from .variable_transfer import set_variable, get_variable
-    from .participant_id import get_participant_id
+    from .participant_id import get_participant_index
     from .registry import update_registries
     from .lock_key import lock, lock_with_retry_time, unlock
     from .wait_task_end import wait_task
@@ -78,3 +91,7 @@ class CoLink:
         switch_to_generated_user,
     )
     from .wait_user_init_func import wait_user_init
+
+
+from .protocol import ProtocolOperator
+from .instant_server import InstantServer

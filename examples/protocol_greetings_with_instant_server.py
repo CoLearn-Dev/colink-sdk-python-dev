@@ -1,10 +1,7 @@
 import logging
 from typing import List
 import colink as CL
-from colink import CoLink
-from colink.instant_server import InstantServer
-from colink.sdk_a import str_to_byte, byte_to_str
-from colink.sdk_p import ProtocolOperator
+from colink import CoLink, str_to_byte, byte_to_str, ProtocolOperator, InstantServer
 
 pop = ProtocolOperator(__name__)
 

@@ -1,6 +1,6 @@
 import logging
 import colink as CL
-from colink.sdk_a import get_path_timestamp, byte_to_str
+from .application import get_path_timestamp, byte_to_str
 
 
 def wait_user_init(self):
@@ -21,4 +21,4 @@ def wait_user_init(self):
         message = CL.SubscriptionMessage.FromString(data)
         if message.change_type != "delete" and message.payload[0] == 1:
             break
-        self.unsubscribe(queue_name)
+    self.unsubscribe(queue_name)
