@@ -29,6 +29,7 @@ class InstantServer:
                     "-c",
                     'bash -c "$(curl -fsSL https://raw.githubusercontent.com/CoLearn-Dev/colinkctl/main/install_colink.sh)"',
                 ],
+                env={"COLINK_INSTALL_SERVER_ONLY": "true","COLINK_INSTALL_SILENT": "true"},
             ).wait()
         instant_server_id = str(uuid.uuid4())
         port = random.randint(10000, 20000)
@@ -37,6 +38,8 @@ class InstantServer:
 
         working_dir = os.path.join(colink_home, "instant_servers", instant_server_id)
         os.makedirs(working_dir, exist_ok=True)
+        mq_amqp = os.environ.get("COLINK_SERVER_MQ_AMQP","amqp://guest:guest@localhost:5672")
+        mq_api = os.environ.get("COLINK_SERVER_MQ_API","http://guest:guest@localhost:15672/api")
         child = subprocess.Popen(
             [
                 program,
@@ -45,9 +48,9 @@ class InstantServer:
                 "--port",
                 str(port),
                 "--mq-amqp",
-                "amqp://guest:guest@localhost:5672",
+                mq_amqp,
                 "--mq-api",
-                "http://guest:guest@localhost:15672/api",
+                mq_api,
                 "--mq-prefix",
                 f"colink-instant-server-{port}",
                 "--core-uri",
@@ -86,6 +89,27 @@ class InstantServer:
 
     def get_colink(self):
         return CoLink(coreaddr=f"http://127.0.0.1:{self.port}", jwt=self.host_token)
+
+
+class InstantRegistry:
+    def __init__(self, _instant_server: InstantServer) -> None:
+        self.instant_server = _instant_server
+        atexit.register(self.clean)
+
+    @staticmethod
+    def new():
+        instant_server = InstantServer.new()
+        colink_home = get_colink_home()
+        registry_file = os.path.join(colink_home, "reg_config")
+        file = open(registry_file, "w")
+        file.close()
+        instant_server.get_colink().switch_to_generated_user()
+        return InstantRegistry(_instant_server=instant_server)
+
+    def clean(self):
+        colink_home = get_colink_home()
+        registry_file = os.path.join(colink_home, "reg_config")
+        os.remove(registry_file)
 
 
 def get_colink_home() -> str:

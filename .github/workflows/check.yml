@@ -21,12 +21,6 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: recursive
-          ssh-key: ${{ secrets.SSH_KEY }}
-      - name: SSH Agent
-        run: |
-          eval `ssh-agent`
-          ssh-add - <<< "${{ secrets.SSH_KEY }}"
-          echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> $GITHUB_ENV
       - name: Download Server
         run: bash download-server.sh
       - name: Install Python
