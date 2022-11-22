@@ -29,7 +29,10 @@ class InstantServer:
                     "-c",
                     'bash -c "$(curl -fsSL https://raw.githubusercontent.com/CoLearn-Dev/colinkctl/main/install_colink.sh)"',
                 ],
-                env={"COLINK_INSTALL_SERVER_ONLY": "true","COLINK_INSTALL_SILENT": "true"},
+                env={
+                    "COLINK_INSTALL_SERVER_ONLY": "true",
+                    "COLINK_INSTALL_SILENT": "true",
+                },
             ).wait()
         instant_server_id = str(uuid.uuid4())
         port = random.randint(10000, 20000)
@@ -38,8 +41,12 @@ class InstantServer:
 
         working_dir = os.path.join(colink_home, "instant_servers", instant_server_id)
         os.makedirs(working_dir, exist_ok=True)
-        mq_amqp = os.environ.get("COLINK_SERVER_MQ_AMQP","amqp://guest:guest@localhost:5672")
-        mq_api = os.environ.get("COLINK_SERVER_MQ_API","http://guest:guest@localhost:15672/api")
+        mq_amqp = os.environ.get(
+            "COLINK_SERVER_MQ_AMQP", "amqp://guest:guest@localhost:5672"
+        )
+        mq_api = os.environ.get(
+            "COLINK_SERVER_MQ_API", "http://guest:guest@localhost:15672/api"
+        )
         child = subprocess.Popen(
             [
                 program,

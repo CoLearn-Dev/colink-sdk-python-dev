@@ -94,4 +94,4 @@ class CoLink:
 
 
 from .protocol import ProtocolOperator
-from .instant_server import InstantServer
+from .instant_server import InstantServer, InstantRegistry
