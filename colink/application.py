@@ -7,9 +7,14 @@ import pika
 import grpc
 import secp256k1
 import copy
-from colink import CoLinkStub
-import colink as CL
-
+from colink.colink_pb2 import *
+from colink.colink_pb2_grpc import CoLinkStub, CoLinkServicer
+from colink.colink_remote_storage_pb2 import *
+from colink.colink_remote_storage_pb2_grpc import *
+from colink.colink_policy_module_pb2 import *
+from colink.colink_policy_module_pb2_grpc import *
+from colink.colink_registry_pb2 import *
+from colink.colink_registry_pb2_grpc import *
 
 class JWT:
     def __init__(self, role: str, user_id: str, exp: int):
@@ -50,7 +55,7 @@ def request_info(self) -> CoLinkInfo:
     client = self._grpc_connect(self.core_addr)
     try:
         response = client.RequestInfo(
-            request=CL.Empty(),
+            request=Empty(),
             metadata=get_jwt_auth(self.jwt),
         )
     except grpc.RpcError as e:
@@ -110,7 +115,7 @@ def import_user(
     client = self._grpc_connect(self.core_addr)
     try:
         response = client.ImportUser(
-            request=CL.UserConsent(
+            request=UserConsent(
                 public_key=public_key_vec,
                 signature_timestamp=signature_timestamp,
                 expiration_timestamp=expiration_timestamp,
@@ -138,7 +143,7 @@ def generate_token_with_expiration_time(
 ) -> str:
     client = self._grpc_connect(self.core_addr)
     response = client.GenerateToken(
-        request=CL.GenerateTokenRequest(
+        request=GenerateTokenRequest(
             expiration_time=expiration_time,
             privilege=privilege,
         ),
@@ -151,7 +156,7 @@ def create_entry(self, key_name: str, payload: bytes) -> str:
     client = self._grpc_connect(self.core_addr)
     try:
         response = client.CreateEntry(
-            CL.StorageEntry(
+            StorageEntry(
                 key_name=key_name,
                 payload=payload,
             ),
@@ -166,11 +171,11 @@ def create_entry(self, key_name: str, payload: bytes) -> str:
         return response.key_path
 
 
-def read_entries(self, entries: List[CL.StorageEntry]) -> List[CL.StorageEntry]:
+def read_entries(self, entries: List[StorageEntry]) -> List[StorageEntry]:
     client = self._grpc_connect(self.core_addr)
     try:
         response = client.ReadEntries(
-            CL.StorageEntries(entries=entries),
+            StorageEntries(entries=entries),
             metadata=get_jwt_auth(self.jwt),
         )
     except grpc.RpcError as e:
@@ -183,7 +188,7 @@ def update_entry(self, key_name: str, payload: bytes) -> str:
     client = self._grpc_connect(self.core_addr)
     try:
         response = client.UpdateEntry(
-            CL.StorageEntry(
+            StorageEntry(
                 key_name=key_name,
                 payload=payload,
             ),
@@ -202,7 +207,7 @@ def delete_entry(self, key_name: str) -> str:
     client = self._grpc_connect(self.core_addr)
     try:
         response = client.DeleteEntry(
-            CL.StorageEntry(
+            StorageEntry(
                 key_name=key_name,
             ),
             metadata=get_jwt_auth(self.jwt),
@@ -221,14 +226,14 @@ def run_task(
     self,
     protocol_name: str,
     protocol_param: bytes,
-    participants: List[CL.Participant],
+    participants: List[Participant],
     require_agreement: bool,
     expiration_time: Union[int, None] = None,
 ) -> str:
     if expiration_time is None:
         expiration_time = get_time_stamp() + 86400
     client = self._grpc_connect(self.core_addr)
-    task = CL.Task(
+    task = Task(
         protocol_name=protocol_name,
         protocol_param=protocol_param,
         participants=participants,
@@ -253,9 +258,9 @@ def confirm_task(
 ):
     client = self._grpc_connect(self.core_addr)
     response = client.ConfirmTask(
-        request=CL.ConfirmTaskRequest(
+        request=ConfirmTaskRequest(
             task_id=task_id,
-            decision=CL.Decision(
+            decision=Decision(
                 is_approved=is_approved, is_rejected=is_rejected, reason=reason
             ),
         ),
@@ -266,7 +271,7 @@ def confirm_task(
 def finish_task(self, task_id: str):
     client = self._grpc_connect(self.core_addr)
     response = client.FinishTask(
-        request=CL.Task(
+        request=Task(
             task_id=task_id,
         ),
         metadata=get_jwt_auth(self.jwt),
@@ -278,7 +283,7 @@ def subscribe(self, key_name: str, start_timestamp: int) -> str:
         start_timestamp = time.time_ns()
     client = self._grpc_connect(self.core_addr)
     response = client.Subscribe(
-        request=CL.SubscribeRequest(
+        request=SubscribeRequest(
             key_name=key_name,
             start_timestamp=start_timestamp,
         ),
@@ -290,7 +295,7 @@ def subscribe(self, key_name: str, start_timestamp: int) -> str:
 def unsubscribe(self, queue_name: str):
     client = self._grpc_connect(self.core_addr)
     response = client.Unsubscribe(
-        CL.MQQueueName(
+        MQQueueName(
             queue_name=queue_name,
         ),
         metadata=get_jwt_auth(self.jwt),
@@ -344,9 +349,9 @@ def _grpc_connect(
 
 def read_entry(self, key: str) -> bytes:
     if "::" in key:
-        storage_entry = CL.StorageEntry(key_path=key)
+        storage_entry = StorageEntry(key_path=key)
     else:
-        storage_entry = CL.StorageEntry(key_name=key)
+        storage_entry = StorageEntry(key_name=key)
     res = self.read_entries([storage_entry])
     if res is None:
         return None
@@ -358,9 +363,9 @@ def read_keys(
     self,
     prefix: str,
     include_history: bool,
-) -> List[CL.StorageEntry]:
+) -> List[StorageEntry]:
     client = self._grpc_connect(self.core_addr)
-    request = CL.ReadKeysRequest(prefix=prefix, include_history=include_history)
+    request = ReadKeysRequest(prefix=prefix, include_history=include_history)
     response = client.ReadKeys(request, metadata=get_jwt_auth(self.jwt))
     return response.entries
 
@@ -372,7 +377,7 @@ def get_user_id(self) -> str:
 
 def start_protocol_operator(self, protocol_name: str, user_id: str):
     client = self._grpc_connect(self.core_addr)
-    request = CL.StartProtocolOperatorRequest(
+    request = StartProtocolOperatorRequest(
         protocol_name=protocol_name, user_id=user_id
     )
     response = client.StartProtocolOperator(
@@ -383,7 +388,7 @@ def start_protocol_operator(self, protocol_name: str, user_id: str):
 
 def stop_protocol_operator(self, instance_id: str):
     client = self._grpc_connect(self.core_addr)
-    request = CL.ProtocolOperatorInstanceId(instance_id=instance_id)
+    request = ProtocolOperatorInstanceId(instance_id=instance_id)
     client.StopProtocolOperator(request=request, metadata=get_jwt_auth(self.jwt))
 
 
