@@ -1,7 +1,7 @@
 import sys
 import logging
 import colink as CL
-from colink.sdk_a import CoLink, get_path_timestamp
+from colink import CoLink, get_path_timestamp
 
 if __name__ == "__main__":
     logging.basicConfig(filename="auto_confirm.log", filemode="a", level=logging.INFO)

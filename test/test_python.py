@@ -8,7 +8,7 @@ import concurrent.futures
 from typing import List
 import logging
 import sys
-from colink.sdk_a import byte_to_str
+from colink import byte_to_str
 
 CORE_ADDR = "127.0.0.1"
 CORE_DOMAIN_NAME = "localhost"

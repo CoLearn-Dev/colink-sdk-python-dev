@@ -1,5 +1,5 @@
 import sys
-from colink.sdk_a import CoLink
+from colink import CoLink
 
 if __name__ == "__main__":
     addr = sys.argv[1]

@@ -1,5 +1,9 @@
 name: colink_python_check
-on: [push]
+on:
+  push:
+    branches:
+      - main
+  pull_request:
 jobs:
   colink_python_check:
     runs-on:  ubuntu-latest

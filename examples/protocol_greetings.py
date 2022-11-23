@@ -1,9 +1,7 @@
-import sys
 import logging
 from typing import List
 import colink as CL
-from colink.sdk_a import CoLink, byte_to_str
-from colink.sdk_p import ProtocolOperator
+from colink import CoLink, ProtocolOperator
 
 pop = ProtocolOperator(__name__)
 
@@ -16,7 +14,6 @@ def run_initiator(cl: CoLink, param: bytes, participants: List[CL.Participant]):
 @pop.handle("greetings:receiver")
 def run_receiver(cl: CoLink, param: bytes, participants: List[CL.Participant]):
     logging.info(f"greetings:receiver protocol operator! {cl.jwt}")
-    # removed using variable transfer in this example, to avoid installing remote storage block for new CoLink server
     cl.create_entry("tasks:{}:output".format(cl.get_task_id()), param)
 
 

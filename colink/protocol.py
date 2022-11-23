@@ -2,15 +2,19 @@ import os
 import argparse
 import pika
 import logging
-from hashlib import sha256
-import concurrent.futures
-import colink as CL
-from colink.sdk_a import byte_to_str, str_to_byte, CoLink, get_path_timestamp
+import queue
+import threading
+from threading import Thread
+from .application import *
+from .colink import CoLink
 
 
-def thread_func(protocol_and_role, cl, user_func):
-    cl_app = CoLinkProtocol(protocol_and_role, cl, user_func)
-    cl_app.start()
+def thread_func(q, protocol_and_role, cl, user_func):
+    try:
+        cl_app = CoLinkProtocol(protocol_and_role, cl, user_func)
+        cl_app.start()
+    except Exception as e:
+        q.put(e)
 
 
 class ProtocolOperator:
@@ -24,8 +28,9 @@ class ProtocolOperator:
 
         return decorator
 
-    def run(self):
-        cl = _cl_parse_args()
+    def run(self, cl: CoLink = None):
+        if cl is None:
+            cl = _cl_parse_args()
         operator_funcs = {}
         protocols = set()
         failed_protocols = set()
@@ -58,27 +63,29 @@ class ProtocolOperator:
             )
             cl.update_entry(is_initialized_key, bytes([1]))
 
-        thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=64)
         threads = []
+        q = queue.Queue()
         for protocol_and_role in self.mapping.keys():  # insert user func to map
             user_func = self.mapping[protocol_and_role]
-            threads.append(
-                thread_pool.submit(thread_func, protocol_and_role, cl, user_func)
+            t = threading.Thread(
+                target=thread_func,
+                args=(q, protocol_and_role, cl, user_func),
+                daemon=True,
             )
-        concurrent.futures.wait(
-            threads, return_when=concurrent.futures.FIRST_EXCEPTION
-        )  # wait until first exception occurs
+            threads.append(t)
         for t in threads:
-            try:
-                t.result(timeout=0.001)  # try if t has exception occur
-            except concurrent.futures.TimeoutError:
-                pass
-            except Exception as e:  # found the thread where exception occurs
-                thread_pool.shutdown(
-                    wait=False, cancel_futures=True
-                )  # kill all threads in thread pool
-                raise e
-        return
+            t.start()
+        while True:
+            if q.empty():
+                if threading.active_count() == 1:
+                    break
+            else:
+                err = q.get()
+                raise err
+
+    def run_attach(self, cl: CoLink):
+        thread = Thread(target=self.run, args=(cl,), daemon=True)
+        thread.start()
 
 
 class CoLinkProtocol:
@@ -98,7 +105,7 @@ class CoLinkProtocol:
         )
         res = self.cl.read_entries(
             [
-                CL.StorageEntry(
+                StorageEntry(
                     key_name=operator_mq_key,
                 )
             ]
@@ -114,7 +121,7 @@ class CoLinkProtocol:
             )
             res = self.cl.read_entries(
                 [
-                    CL.StorageEntry(
+                    StorageEntry(
                         key_name=list_key,
                     )
                 ]
@@ -122,7 +129,7 @@ class CoLinkProtocol:
             start_timestamp = 0
             if res is not None:
                 list_entry = res[0]
-                lis = CL.CoLinkInternalTaskIDList.FromString(list_entry.payload)
+                lis = CoLinkInternalTaskIDList.FromString(list_entry.payload)
                 if len(lis.task_ids_with_key_paths) == 0:
                     start_timestamp = get_path_timestamp(list_entry.key_path)
                 else:
@@ -133,26 +140,26 @@ class CoLinkProtocol:
                         )
             queue_name = self.cl.subscribe(latest_key, start_timestamp)
             self.cl.create_entry(operator_mq_key, str_to_byte(queue_name))
-        mq_addr, _, _ = self.cl.request_info()
+        mq_addr = self.cl.request_info().mq_uri
         param = pika.connection.URLParameters(url=mq_addr)
         mq = pika.BlockingConnection(param)  # establish rabbitmq connection
         channel = mq.channel()
-        for method, properties, body in channel.consume(queue_name):
+        for method, _, body in channel.consume(queue_name):
             channel.basic_ack(method.delivery_tag)
             data = body
-            message = CL.SubscriptionMessage.FromString(data)
+            message = SubscriptionMessage.FromString(data)
             if message.change_type != "delete":
-                task_id = CL.Task.FromString(message.payload)
+                task_id = Task.FromString(message.payload)
                 res = self.cl.read_entries(
                     [
-                        CL.StorageEntry(
+                        StorageEntry(
                             key_name="_internal:tasks:{}".format(task_id.task_id),
                         )
                     ]
                 )
                 if res is not None:
                     task_entry = res[0]
-                    task = CL.Task.FromString(task_entry.payload)
+                    task = Task.FromString(task_entry.payload)
                     if task.status == "started":
                         # begin user func
                         cl = self.cl
@@ -167,11 +174,10 @@ class CoLinkProtocol:
                             )
                             raise e
                         self.cl.finish_task(task.task_id)
-
                         logging.info("finnish task:%s", task.task_id)
                 else:
-
                     logging.error("Pull Task Error.")
+                    raise Exception("Pull Task Error.")
 
 
 def _cl_parse_args() -> CoLink:
@@ -193,7 +199,3 @@ def _cl_parse_args() -> CoLink:
     if cert != "" and key != "":
         cl.identity(cert, key)
     return cl
-
-
-def _sha256(s):
-    return sha256(s.encode("utf-8")).hexdigest()

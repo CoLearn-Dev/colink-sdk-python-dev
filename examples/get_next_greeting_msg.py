@@ -1,7 +1,6 @@
-import queue
 import sys
 import colink as CL
-from colink.sdk_a import CoLink, byte_to_str
+from colink import CoLink, byte_to_str
 
 if __name__ == "__main__":
     addr = sys.argv[1]

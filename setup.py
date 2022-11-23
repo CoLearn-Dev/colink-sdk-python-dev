@@ -3,7 +3,7 @@ import subprocess
 import sys
 import pkg_resources
 
-grpc_tools_version = "grpcio-tools==1.48.0"
+grpc_tools_version = "grpcio-tools==1.50.0"
 subprocess.check_call(
     [sys.executable, "-m", "pip", "install", grpc_tools_version]
 )  # in order to generate grpc template we must first install grpcio-tools here
@@ -50,7 +50,7 @@ desc_file.close()
 
 setup(
     name="colink",
-    version="0.2.0",
+    version="0.2.1",
     description="colink python module",
     long_description=long_description,
     long_description_content_type="text/markdown",
