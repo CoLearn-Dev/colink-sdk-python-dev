@@ -5,9 +5,8 @@ import logging
 import queue
 import threading
 from threading import Thread
-from .application import byte_to_str, str_to_byte, get_path_timestamp
-import colink as CL
-from colink import CoLink
+from .application import *
+from .colink import CoLink
 
 
 def thread_func(q, protocol_and_role, cl, user_func):
@@ -106,7 +105,7 @@ class CoLinkProtocol:
         )
         res = self.cl.read_entries(
             [
-                CL.StorageEntry(
+                StorageEntry(
                     key_name=operator_mq_key,
                 )
             ]
@@ -122,7 +121,7 @@ class CoLinkProtocol:
             )
             res = self.cl.read_entries(
                 [
-                    CL.StorageEntry(
+                    StorageEntry(
                         key_name=list_key,
                     )
                 ]
@@ -130,7 +129,7 @@ class CoLinkProtocol:
             start_timestamp = 0
             if res is not None:
                 list_entry = res[0]
-                lis = CL.CoLinkInternalTaskIDList.FromString(list_entry.payload)
+                lis = CoLinkInternalTaskIDList.FromString(list_entry.payload)
                 if len(lis.task_ids_with_key_paths) == 0:
                     start_timestamp = get_path_timestamp(list_entry.key_path)
                 else:
@@ -148,19 +147,19 @@ class CoLinkProtocol:
         for method, _, body in channel.consume(queue_name):
             channel.basic_ack(method.delivery_tag)
             data = body
-            message = CL.SubscriptionMessage.FromString(data)
+            message = SubscriptionMessage.FromString(data)
             if message.change_type != "delete":
-                task_id = CL.Task.FromString(message.payload)
+                task_id = Task.FromString(message.payload)
                 res = self.cl.read_entries(
                     [
-                        CL.StorageEntry(
+                        StorageEntry(
                             key_name="_internal:tasks:{}".format(task_id.task_id),
                         )
                     ]
                 )
                 if res is not None:
                     task_entry = res[0]
-                    task = CL.Task.FromString(task_entry.payload)
+                    task = Task.FromString(task_entry.payload)
                     if task.status == "started":
                         # begin user func
                         cl = self.cl
