@@ -3,6 +3,8 @@ import argparse
 import pika
 import logging
 import queue
+import time
+import random
 import threading
 from threading import Thread
 from .application import *
@@ -28,9 +30,9 @@ class ProtocolOperator:
 
         return decorator
 
-    def run(self, cl: CoLink = None):
+    def run(self, cl: CoLink = None, keep_alive_when_disconnect: bool = False):
         if cl is None:
-            cl = _cl_parse_args()
+            cl, keep_alive_when_disconnect = _cl_parse_args()
         operator_funcs = {}
         protocols = set()
         failed_protocols = set()
@@ -75,13 +77,37 @@ class ProtocolOperator:
             threads.append(t)
         for t in threads:
             t.start()
-        while True:
-            if q.empty():
-                if threading.active_count() == 1:
-                    break
-            else:
-                err = q.get()
-                raise err
+        if keep_alive_when_disconnect:
+            while True:
+                if q.empty():
+                    if threading.active_count() == 1:
+                        break
+                else:
+                    err = q.get()
+                    raise err
+        else:
+            counter = 0
+            timer = time.time() + random.randint(32, 64)
+            while True:
+                if q.empty():
+                    if threading.active_count() == 1:
+                        break
+                else:
+                    err = q.get()
+                    raise err
+                # both catch thread error & detect server connection
+                if time.time() > timer:
+                    timer += random.randint(32, 64)  # update timer
+                    try:
+                        cl.request_info()
+                    except Exception as e:
+                        counter += 1
+                        if counter >= 3:
+                            break
+                    else:
+                        counter = 0
+                    # here we don't directly sleep 32~64s like rust because we have to detect sub-thread errors
+                time.sleep(0.001)
 
     def run_attach(self, cl: CoLink):
         thread = Thread(target=self.run, args=(cl,), daemon=True)
@@ -180,22 +206,26 @@ class CoLinkProtocol:
                     raise Exception("Pull Task Error.")
 
 
-def _cl_parse_args() -> CoLink:
+def _cl_parse_args() -> Tuple[CoLink, bool]:
     parser = argparse.ArgumentParser(description="protocol operator entry")
     parser.add_argument("--addr", type=str, default="", help="")
     parser.add_argument("--jwt", type=str, default="", help="")
     parser.add_argument("--ca", type=str, default="", help="")
     parser.add_argument("--cert", type=str, default="", help="")
     parser.add_argument("--key", type=str, default="", help="")
+    parser.add_argument("--keep-alive-when-disconnect", action="store_true", help="")
     args = parser.parse_args()
     addr = args.addr if args.addr else os.environ.get("COLINK_CORE_ADDR", "")
     jwt = args.jwt if args.jwt else os.environ.get("COLINK_JWT", "")
     ca = args.ca if args.ca else os.environ.get("COLINK_CA_CERT", "")
     cert = args.cert if args.cert else os.environ.get("COLINK_CLIENT_CERT", "")
     key = args.key if args.key else os.environ.get("COLINK_CLIENT_KEY", "")
+    args.keep_alive_when_disconnect = args.keep_alive_when_disconnect or bool(
+        os.environ.get("COLINK_KEEP_ALIVE_WHEN_DISCONNECT", "")
+    )
     cl = CoLink(addr, jwt)
     if ca != "":
         cl.ca_certificate(ca)
     if cert != "" and key != "":
         cl.identity(cert, key)
-    return cl
+    return cl, args.keep_alive_when_disconnect

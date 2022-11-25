@@ -1,7 +1,14 @@
 import logging
 from typing import List
 import colink as CL
-from colink import CoLink, str_to_byte, byte_to_str, ProtocolOperator, InstantServer, InstantRegistry
+from colink import (
+    CoLink,
+    str_to_byte,
+    byte_to_str,
+    ProtocolOperator,
+    InstantServer,
+    InstantRegistry,
+)
 
 pop = ProtocolOperator(__name__)
 
