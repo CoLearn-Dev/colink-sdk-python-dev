@@ -87,7 +87,7 @@ class ProtocolOperator:
                     raise err
         else:
             counter = 0
-            timer = time.time() + random.randint(32, 64)
+            timer = time.time() + random.randint(32,64)
             while True:
                 if q.empty():
                     if threading.active_count() == 1:
@@ -97,7 +97,7 @@ class ProtocolOperator:
                     raise err
                 # both catch thread error & detect server connection
                 if time.time() > timer:
-                    timer += random.randint(32, 64)  # update timer
+                    timer = time.time() + random.randint(32,64)  # update timer
                     try:
                         cl.request_info()
                     except Exception as e:
