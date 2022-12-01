@@ -85,6 +85,7 @@ class ProtocolOperator:
                 else:
                     err = q.get()
                     raise err
+                time.sleep(0.1)
         else:
             counter = 0
             timer = time.time() + random.randint(32,64)
@@ -107,7 +108,7 @@ class ProtocolOperator:
                     else:
                         counter = 0
                     # here we don't directly sleep 32~64s like rust because we have to detect sub-thread errors
-                time.sleep(0.001)
+                time.sleep(0.1)
 
     def run_attach(self, cl: CoLink):
         thread = Thread(target=self.run, args=(cl,), daemon=True)

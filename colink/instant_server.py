@@ -98,9 +98,12 @@ class InstantServer:
         return CoLink(coreaddr=f"http://127.0.0.1:{self.port}", jwt=self.host_token)
 
 
-class InstantRegistry:
+class InstantRegistry(InstantServer):
     def __init__(self, _instant_server: InstantServer) -> None:
-        self.instant_server = _instant_server
+        self.id = _instant_server.id
+        self.port = _instant_server.port
+        self.host_token = _instant_server.host_token
+        self.process = _instant_server.process
         atexit.register(self.clean)
 
     @staticmethod
