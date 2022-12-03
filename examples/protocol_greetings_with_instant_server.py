@@ -25,9 +25,9 @@ def run_receiver(cl: CoLink, param: bytes, participants: List[CL.Participant]):
 
 
 if __name__ == "__main__":
-    ir = InstantRegistry.new()
-    is0 = InstantServer.new()
-    is1 = InstantServer.new()
+    ir = InstantRegistry()
+    is0 = InstantServer()
+    is1 = InstantServer()
     cl0 = is0.get_colink().switch_to_generated_user()
     cl1 = is1.get_colink().switch_to_generated_user()
     pop.run_attach(cl0)
