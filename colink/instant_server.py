@@ -68,9 +68,7 @@ class InstantServer:
             ):
                 break
             time.sleep(0.01)
-
         self.host_token = open(os.path.join(working_dir, "host_token.txt"), "r").read()
-        
         atexit.register(self.clean)
 
     def clean(self):
@@ -94,9 +92,6 @@ class InstantRegistry(InstantServer):
         file = open(registry_file, "w")
         file.close()
         self.get_colink().switch_to_generated_user()
-        atexit.unregister(self.clean) #unregister the clean function of parent class
-        atexit.register(self.clean) #register the clean function of self
-        
 
     def clean(self):
         super().clean()
