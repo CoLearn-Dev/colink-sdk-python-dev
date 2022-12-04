@@ -1,7 +1,14 @@
 import logging
 from typing import List
 import colink as CL
-from colink import CoLink, str_to_byte, byte_to_str, ProtocolOperator, InstantServer
+from colink import (
+    CoLink,
+    str_to_byte,
+    byte_to_str,
+    ProtocolOperator,
+    InstantServer,
+    InstantRegistry,
+)
 
 pop = ProtocolOperator(__name__)
 
@@ -18,8 +25,9 @@ def run_receiver(cl: CoLink, param: bytes, participants: List[CL.Participant]):
 
 
 if __name__ == "__main__":
-    is0 = InstantServer.new()
-    is1 = InstantServer.new()
+    ir = InstantRegistry()
+    is0 = InstantServer()
+    is1 = InstantServer()
     cl0 = is0.get_colink().switch_to_generated_user()
     cl1 = is1.get_colink().switch_to_generated_user()
     pop.run_attach(cl0)
