@@ -18,7 +18,4 @@ if __name__ == "__main__":
                 )
             ]
         )
-        output_entry = res[0]
-        print(
-            byte_to_str(output_entry.payload), end=""
-        )  # send the greeting message to pipe
+        print(byte_to_str(res[0].payload), end="")  # send the greeting message to pipe

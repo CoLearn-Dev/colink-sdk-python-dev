@@ -16,11 +16,10 @@ def lock_with_retry_time(
     retry_time_cap_in_ms: int,
 ) -> Tuple[str, int]:
     sleep_time_cap = 1
-    rnd_num = random.getrandbits(32)
+    rnd_num = random.getrandbits(32)-2**31
     while True:
-        payload = rnd_num.to_bytes(length=32, byteorder="little", signed=False)
         try:
-            self.create_entry("_lock:{}".format(key), payload)
+            self.create_entry("_lock:{}".format(key), rnd_num)
         except grpc.RpcError as e:
             pass
         else:

@@ -10,7 +10,7 @@ def lock_and_unlock(cl):
     print(num)
     cl.update_entry(
         "example_lock_counter",
-        (num + 1).to_bytes(length=32, byteorder="little", signed=False),
+        num + 1,
     )
     cl.unlock((key, rnd_num))
 
@@ -21,10 +21,7 @@ if __name__ == "__main__":
     jwt = sys.argv[2]
 
     cl = CoLink(addr, jwt)
-    cl.update_entry(
-        "example_lock_counter",
-        int(0).to_bytes(length=32, byteorder="little", signed=False),
-    )
+    cl.update_entry("example_lock_counter", 0)
 
     ths = []
     child_processes = []

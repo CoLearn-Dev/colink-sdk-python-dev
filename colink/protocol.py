@@ -139,8 +139,7 @@ class CoLinkProtocol:
         )
         queue_name = ""
         if res is not None:
-            operator_mq_entry = res[0]
-            queue_name = byte_to_str(operator_mq_entry.payload)
+            queue_name = byte_to_str(res[0].payload)
         else:
             list_key = "_internal:protocols:{}:started".format(self.protocol_and_role)
             latest_key = "_internal:protocols:{}:started:latest".format(

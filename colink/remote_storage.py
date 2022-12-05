@@ -1,5 +1,6 @@
 import logging
-from typing import List
+from typing import List, Any
+from .application import try_convert_to_bytes
 import colink as CL
 
 
@@ -7,9 +8,10 @@ def remote_storage_create(
     self,
     providers: List[str],
     key: str,
-    payload: bytes,
+    payload: Any,
     is_public: bool,
 ):
+    payload = try_convert_to_bytes(payload)
     participants = [
         CL.Participant(
             user_id=self.get_user_id(),
@@ -60,9 +62,10 @@ def remote_storage_update(
     self,
     providers: List[str],
     key: str,
-    payload: bytes,
+    payload: Any,
     is_public: bool,
 ):
+    payload = try_convert_to_bytes(payload)
     participants = [
         CL.Participant(
             user_id=self.get_user_id(),

@@ -2,7 +2,7 @@ import logging
 import json
 import time
 import base64
-from typing import Tuple, List, Union
+from typing import Tuple, List, Union, Any
 import pika
 import grpc
 import secp256k1
@@ -15,6 +15,7 @@ from colink.colink_policy_module_pb2 import *
 from colink.colink_policy_module_pb2_grpc import *
 from colink.colink_registry_pb2 import *
 from colink.colink_registry_pb2_grpc import *
+
 
 class JWT:
     def __init__(self, role: str, user_id: str, exp: int):
@@ -78,7 +79,7 @@ def import_guest_jwt(self, jwt: str):
     )  # want user_id from jwt, decode it to get
     self.create_entry(
         "_internal:known_users:{}:guest_jwt".format(jwt_decoded.user_id),
-        str_to_byte(jwt),
+        jwt,
     )
 
 
@@ -89,7 +90,7 @@ def import_core_addr(
 ):
     self.create_entry(
         "_internal:known_users:{}:core_addr".format(user_id),
-        str_to_byte(core_addr),
+        core_addr,
     )
 
 
@@ -152,8 +153,9 @@ def generate_token_with_expiration_time(
     return response.jwt
 
 
-def create_entry(self, key_name: str, payload: bytes) -> str:
+def create_entry(self, key_name: str, payload: Any) -> str:
     client = self._grpc_connect(self.core_addr)
+    payload = try_convert_to_bytes(payload)
     try:
         response = client.CreateEntry(
             StorageEntry(
@@ -184,8 +186,9 @@ def read_entries(self, entries: List[StorageEntry]) -> List[StorageEntry]:
         return response.entries
 
 
-def update_entry(self, key_name: str, payload: bytes) -> str:
+def update_entry(self, key_name: str, payload: Any) -> str:
     client = self._grpc_connect(self.core_addr)
+    payload = try_convert_to_bytes(payload)
     try:
         response = client.UpdateEntry(
             StorageEntry(
@@ -225,7 +228,7 @@ def delete_entry(self, key_name: str) -> str:
 def run_task(
     self,
     protocol_name: str,
-    protocol_param: bytes,
+    protocol_param: Any,
     participants: List[Participant],
     require_agreement: bool,
     expiration_time: Union[int, None] = None,
@@ -233,6 +236,7 @@ def run_task(
     if expiration_time is None:
         expiration_time = get_time_stamp() + 86400
     client = self._grpc_connect(self.core_addr)
+    protocol_param=try_convert_to_bytes(protocol_param)
     task = Task(
         protocol_name=protocol_name,
         protocol_param=protocol_param,
@@ -377,9 +381,7 @@ def get_user_id(self) -> str:
 
 def start_protocol_operator(self, protocol_name: str, user_id: str):
     client = self._grpc_connect(self.core_addr)
-    request = StartProtocolOperatorRequest(
-        protocol_name=protocol_name, user_id=user_id
-    )
+    request = StartProtocolOperatorRequest(protocol_name=protocol_name, user_id=user_id)
     response = client.StartProtocolOperator(
         request=request, metadata=get_jwt_auth(self.jwt)
     )
@@ -484,3 +486,16 @@ def get_jwt_auth(
             jwt,
         )
     ]
+
+
+def try_convert_to_bytes(val: Any):
+    if isinstance(val, str):
+        return str_to_byte(val)
+    elif isinstance(val, int):
+        return val.to_bytes(length=32, byteorder="little", signed=True)
+    elif isinstance(val, bytes):
+        return val
+    else:
+        raise NotImplementedError(
+            f"{type(val)} automatic conversion to bytes not supported. Please serialize to bytes manually."
+        )
