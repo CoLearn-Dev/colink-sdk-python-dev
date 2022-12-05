@@ -236,7 +236,7 @@ def run_task(
     if expiration_time is None:
         expiration_time = get_time_stamp() + 86400
     client = self._grpc_connect(self.core_addr)
-    protocol_param=try_convert_to_bytes(protocol_param)
+    protocol_param = try_convert_to_bytes(protocol_param)
     task = Task(
         protocol_name=protocol_name,
         protocol_param=protocol_param,
@@ -460,10 +460,6 @@ def base64_decode(sw):
     return base64.urlsafe_b64decode(sw)
 
 
-def str_to_byte(s: str):
-    return bytes(s, "utf-8")
-
-
 def byte_to_str(b: bytes):
     return str(b, encoding="utf-8")
 
@@ -490,7 +486,7 @@ def get_jwt_auth(
 
 def try_convert_to_bytes(val: Any):
     if isinstance(val, str):
-        return str_to_byte(val)
+        return bytes(val, "utf-8")
     elif isinstance(val, int):
         return val.to_bytes(length=32, byteorder="little", signed=True)
     elif isinstance(val, bytes):

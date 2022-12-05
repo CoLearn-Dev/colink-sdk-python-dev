@@ -3,7 +3,6 @@ from typing import List
 import colink as CL
 from colink import (
     CoLink,
-    str_to_byte,
     byte_to_str,
     ProtocolOperator,
     InstantServer,
@@ -36,6 +35,6 @@ if __name__ == "__main__":
         CL.Participant(user_id=cl0.get_user_id(), role="initiator"),
         CL.Participant(user_id=cl1.get_user_id(), role="receiver"),
     ]
-    task_id = cl0.run_task("greetings", str_to_byte("test"), participants, True)
+    task_id = cl0.run_task("greetings", "test", participants, True)
     res = cl1.read_or_wait(f"tasks:{task_id}:output")
     print(f"result: {byte_to_str(res)}")

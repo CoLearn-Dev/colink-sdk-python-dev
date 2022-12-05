@@ -1,7 +1,7 @@
 import sys
 import logging
 import colink as CL
-from colink import CoLink, decode_jwt_without_validation, str_to_byte, byte_to_str
+from colink import CoLink, decode_jwt_without_validation, byte_to_str
 
 if __name__ == "__main__":
     logging.basicConfig(filename="user_run_task.log", filemode="a", level=logging.INFO)
@@ -20,7 +20,7 @@ if __name__ == "__main__":
     cl.remote_storage_create(
         [user_id_b],
         "remote_storage_demo",
-        str_to_byte(msg),
+        msg,
         False,
     )
     clb = CoLink(addr, jwt_b)
@@ -41,7 +41,7 @@ if __name__ == "__main__":
     cl.remote_storage_update(
         [user_id_b],
         "remote_storage_demo",
-        str_to_byte("update {}".format(msg)),
+        "update {}".format(msg),
         False,
     )
 

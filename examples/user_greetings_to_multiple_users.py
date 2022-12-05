@@ -1,7 +1,7 @@
 import sys
 import logging
 import colink as CL
-from colink import CoLink, decode_jwt_without_validation, str_to_byte
+from colink import CoLink, decode_jwt_without_validation
 
 if __name__ == "__main__":
     logging.basicConfig(
@@ -26,7 +26,7 @@ if __name__ == "__main__":
             )
         )
     cl = CoLink(addr, jwt_initiator)
-    task_id = cl.run_task("greetings", str_to_byte(msg), participants, True)
+    task_id = cl.run_task("greetings", msg, participants, True)
     logging.info(
         "Task %s has been created, but it will remain in waiting status until the protocol starts.",
         task_id,
