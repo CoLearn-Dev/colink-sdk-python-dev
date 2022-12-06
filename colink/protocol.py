@@ -88,7 +88,7 @@ class ProtocolOperator:
                 time.sleep(0.01)
         else:
             counter = 0
-            timer = time.time() + random.randint(32,64)
+            timer = time.time() + random.randint(32, 64)
             while True:
                 if q.empty():
                     if threading.active_count() == 1:
@@ -98,7 +98,7 @@ class ProtocolOperator:
                     raise err
                 # both catch thread error & detect server connection
                 if time.time() > timer:
-                    timer = time.time() + random.randint(32,64)  # update timer
+                    timer = time.time() + random.randint(32, 64)  # update timer
                     try:
                         cl.request_info()
                     except Exception as e:
@@ -139,8 +139,7 @@ class CoLinkProtocol:
         )
         queue_name = ""
         if res is not None:
-            operator_mq_entry = res[0]
-            queue_name = byte_to_str(operator_mq_entry.payload)
+            queue_name = byte_to_str(res[0].payload)
         else:
             list_key = "_internal:protocols:{}:started".format(self.protocol_and_role)
             latest_key = "_internal:protocols:{}:started:latest".format(
@@ -166,7 +165,7 @@ class CoLinkProtocol:
                             start_timestamp, get_path_timestamp(p.key_path)
                         )
             queue_name = self.cl.subscribe(latest_key, start_timestamp)
-            self.cl.create_entry(operator_mq_key, str_to_byte(queue_name))
+            self.cl.create_entry(operator_mq_key, queue_name)
         mq_addr = self.cl.request_info().mq_uri
         param = pika.connection.URLParameters(url=mq_addr)
         mq = pika.BlockingConnection(param)  # establish rabbitmq connection
