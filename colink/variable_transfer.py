@@ -31,9 +31,7 @@ def set_variable_with_remote_storage(
         payload=payload,
     )
     payload = params.SerializeToString()
-    print(f'before remote storage task!! {self.jwt}',file=open('err.txt','a'))
     self.run_task("remote_storage.create", payload, new_participants, False)
-    print(f'remote storage finish!! {self.jwt} ',file=open('err.txt','a'))
 
 def get_variable_with_remote_storage(self, key: str, sender: CL.Participant) -> bytes:
     if self.task_id is None:
@@ -42,9 +40,7 @@ def get_variable_with_remote_storage(self, key: str, sender: CL.Participant) -> 
     key = "_remote_storage:private:{}:_variable_transfer:{}:{}".format(
         sender.user_id, self.get_task_id(), key
     )
-    print(f'before get task!! {self.jwt}',file=open('err.txt','a'))
     res = self.read_or_wait(key)
-    print(f'end get task!! {self.jwt}',file=open('err.txt','a'))
     return res
 
 
@@ -52,10 +48,7 @@ def thread_set_var(cl, key: str, payload: bytes, receiver: CL.Participant):
     try:
         cl._set_variable_p2p(key, payload, receiver)
     except Exception as e:
-        print(e,file=open('setter_err.txt','a'))
         cl.set_variable_with_remote_storage(key, payload, [receiver])
-        pass
-
 
 def set_variable(self, key: str, payload: bytes, receivers: List[CL.Participant]):
     threads = []
@@ -73,14 +66,7 @@ def get_variable(self, key: str, sender: CL.Participant) -> bytes:
     if self.task_id is None:
         raise Exception("task_id not found")
     try:
-        print("Enter try!",file=open('err.txt','a'))
         res = self._get_variable_p2p(key, sender)
-        print("Finnish! get var with except",file=open('err.txt','a'))
     except Exception as e:
-        print("FUck ZHEN EXIN",e,file=open('err.txt','a'))
-        raise e
         res = self.get_variable_with_remote_storage(key, sender)
-        return res
-    else:
-        print('get no problem!',file=open('err.txt','a'))
-        return res
+    return res

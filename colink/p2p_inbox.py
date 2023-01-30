@@ -138,7 +138,6 @@ class VtP2pCtx:
 
 def _set_variable_p2p(self, key: str, payload: bytes, receiver: CL.Participant):
     if not self.vt_p2p_ctx.remote_inboxes.get(receiver.user_id, ""):
-        print("set var p2p ",file=open("setter_debug.txt",'w'))
         inbox = self.get_variable_with_remote_storage("inbox", receiver)
         vt_inbox_dic = json.loads(inbox)
         if isinstance(vt_inbox_dic["tls_cert"], list):
@@ -178,7 +177,6 @@ def _set_variable_p2p(self, key: str, payload: bytes, receiver: CL.Participant):
 
 
 def _get_variable_p2p(self, key: str, sender: CL.Participant) -> bytes:
-    print(f'go ahead lets rock and role!{self.jwt}',file=open('err.txt','a'))
     # send inbox information to the sender by remote_storage
     if not sender.user_id in self.vt_p2p_ctx.has_configured_inbox:
         # create inbox if it does not exist
@@ -210,48 +208,33 @@ def _get_variable_p2p(self, key: str, sender: CL.Participant) -> bytes:
                 "tls_cert": list(vt_inbox.tls_cert),
             }
         )
-        print(f'debug before set var with remote{self.jwt}',file=open('err.txt','a'))
         self.set_variable_with_remote_storage(
             "inbox", bytes(vt_inbox_vec, encoding="utf-8"), [sender]
         )
-        print(f'after send!{self.jwt}',file=open('err.txt','a'))
         self.vt_p2p_ctx.has_configured_inbox.add(sender.user_id)
-    print(f'here!!!{self.jwt}',file=open('err.txt','a'))
     if self.vt_p2p_ctx.public_addr == "":
         raise Exception("Remote inbox: not available")
-    
-    print('here!!!2',file=open('err.txt','a'))
-
     tx = Queue()
     with self.vt_p2p_ctx.inbox_server.read():
         inbox_server = self.vt_p2p_ctx.inbox_server
-        print(f'here!!!3{self.jwt}',file=open('err.txt','a'))
         with inbox_server.data_map.read():
             data = inbox_server.data_map.get((sender.user_id, key), "")
             if data:
-                print('here!!! return1',file=open('err.txt','a'))
                 return data
-        print('here!!!4',file=open('err.txt','a'))
         with inbox_server.notification_channels.write():
             inbox_server.notification_channels.update({(sender.user_id, key): tx})
         # try again after creating the channel
-        print('here!!!5',file=open('err.txt','a'))
         with inbox_server.data_map.read():
             data = inbox_server.data_map.get((sender.user_id, key), "")
             if data:
-                print('here!!! return2',file=open('err.txt','a'))
                 return data
-    print('before tx recv',file=open('err.txt','a'))
     while tx.empty():
         continue
-    print('past tx recv',file=open('err.txt','a'))
     with self.vt_p2p_ctx.inbox_server.read():
         inbox_server = self.vt_p2p_ctx.inbox_server
-        print('here!!!6',file=open('err.txt','a'))
         with inbox_server.data_map.read():
             data = inbox_server.data_map.get((sender.user_id, key), "")
             if data:
-                print('here!!! return3',file=open('err.txt','a'))
                 return data
             else:
                 raise Exception("Fail to retrieve data from the inbox")
