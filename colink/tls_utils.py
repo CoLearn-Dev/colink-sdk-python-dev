@@ -15,7 +15,7 @@ from typing import Tuple
 import datetime
 
 
-def gen_cert() -> Tuple[bytes, bytes, bytes, bytes]:
+def gen_cert() -> Tuple[bytes, bytes, bytes]:
     SELF_SIGNED_CERT_DOMAIN_NAME = "vt-p2p.colink"
     subject_alt_names = [DNSName(SELF_SIGNED_CERT_DOMAIN_NAME)]
     private_key = ec.generate_private_key(ec.SECP256R1())

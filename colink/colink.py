@@ -15,7 +15,6 @@ class CoLink:
         self.task_id = ""
         self.ca_cert = ca_certificate
         self._identity = identity
-        # self.vt_p2p_ctx = VtP2pCtx()
 
     def ca_certificate(self, ca_certificate: str):
         f_ca = open(ca_certificate, "rb")
