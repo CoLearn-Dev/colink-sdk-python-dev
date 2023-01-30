@@ -27,6 +27,7 @@ class InstantServer:
                 },
             ).wait()
         self.id = str(uuid.uuid4())
+        print("ID ",self.id)
         self.port = random.randint(10000, 20000)
         while socket.socket().connect_ex(("127.0.0.1", self.port)) == 0:
             self.port = random.randint(10000, 20000)

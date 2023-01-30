@@ -7,6 +7,8 @@ import pika
 import grpc
 import secp256k1
 import copy
+from contextlib import contextmanager
+from threading import Lock
 from colink.colink_pb2 import *
 from colink.colink_pb2_grpc import CoLinkStub, CoLinkServicer
 from colink.colink_remote_storage_pb2 import *
@@ -495,3 +497,56 @@ def try_convert_to_bytes(val: Any):
         raise NotImplementedError(
             f"{type(val)} automatic conversion to bytes not supported. Please serialize to bytes manually."
         )
+
+
+class Mutex:
+    def __init__(self, base_obj):
+        self._value = base_obj
+        self._lock = Lock()
+
+    @contextmanager
+    def lock(self):
+        try:
+            self._lock.acquire()
+            yield
+        finally:
+            self._lock.release()
+
+    def __getattr__(self, name):
+        return getattr(self._value, name)
+
+
+class RWLock:
+    def __init__(self, base_obj):
+        self._value = base_obj
+        self.w_lock = Lock()
+        self.r_lock = Lock()
+        self.num_r = 0
+
+    @contextmanager
+    def read(self):
+        try:
+            self.r_lock.acquire()
+            self.num_r += 1
+            if self.num_r == 1:
+                self.w_lock.acquire()
+            self.r_lock.release()
+            yield
+        finally:
+            assert self.num_r > 0
+            self.r_lock.acquire()
+            self.num_r -= 1
+            if self.num_r == 0:
+                self.w_lock.release()
+            self.r_lock.release()
+
+    @contextmanager
+    def write(self):
+        try:
+            self.w_lock.acquire()
+            yield
+        finally:
+            self.w_lock.release()
+
+    def __getattr__(self, name):
+        return getattr(self._value, name)
