@@ -27,6 +27,7 @@ def run_receiver(cl: CoLink, param: bytes, participants: List[CL.Participant]):
         msg = cl.get_variable_with_remote_storage(key2, participants[0])
         cl.create_entry(f"tasks:{cl.get_task_id()}:output_remote_storage{i}", msg)
 
+
 def test_protocol_vt():
     ir = InstantRegistry()
     iss = []
@@ -52,6 +53,7 @@ def test_protocol_vt():
             assert byte_to_str(res) == data
             res = cls[idx].read_or_wait(f"tasks:{task_id}:output_remote_storage{idx2}")
             assert byte_to_str(res) == data
+
+
 if __name__ == "__main__":
     test_protocol_vt()
-

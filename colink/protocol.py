@@ -208,7 +208,7 @@ class CoLinkProtocol:
                                 )
                             )
                             raise e
-                        #if cl.vt_p2p_ctx.inbox_server._value is not None:
+                        # if cl.vt_p2p_ctx.inbox_server._value is not None:
                         #    with cl.vt_p2p_ctx.inbox_server.write():  # send shutdown signal
                         #        cl.vt_p2p_ctx.inbox_server.shutdown_channel.put(1)
                         self.cl.finish_task(task.task_id)
