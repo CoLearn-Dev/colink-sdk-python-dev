@@ -43,14 +43,12 @@ def get_variable_with_remote_storage(self, key: str, sender: CL.Participant) -> 
     res = self.read_or_wait(key)
     return res
 
-
-def thread_set_var(cl, key: str, payload: bytes, receiver: CL.Participant):
-    try:
-        cl._set_variable_p2p(key, payload, receiver)
-    except Exception as e:
-        cl.set_variable_with_remote_storage(key, payload, [receiver])
-
 def set_variable(self, key: str, payload: bytes, receivers: List[CL.Participant]):
+    def thread_set_var(cl, key: str, payload: bytes, receiver: CL.Participant):
+        try:
+            cl._set_variable_p2p(key, payload, receiver)
+        except Exception as e:
+            cl.set_variable_with_remote_storage(key, payload, [receiver])
     threads = []
     for receiver in receivers:
         threads.append(

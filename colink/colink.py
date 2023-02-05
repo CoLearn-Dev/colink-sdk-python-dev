@@ -78,7 +78,6 @@ class CoLink:
         set_variable,
         get_variable,
     )
-    from .p2p_inbox import _set_variable_p2p, _get_variable_p2p
     from .participant_id import get_participant_index
     from .registry import update_registries
     from .lock_key import lock, lock_with_retry_time, unlock

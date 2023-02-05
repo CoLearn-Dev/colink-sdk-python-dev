@@ -17,7 +17,6 @@ from .application import Mutex, RWLock
 from tempfile import NamedTemporaryFile
 from .tls_utils import gen_cert
 
-
 class VTInbox:
     def __init__(self, addr: str, vt_jwt: str, tls_cert: bytes):
         self.addr = addr
@@ -131,14 +130,14 @@ class VtP2pCtx:
     ):
         self.public_addr = public_addr
         self.has_created_inbox = Mutex(has_created_inbox)
-        self.inbox_server = RWLock(inbox_server)
+        self.inbox_server = inbox_server
         self.has_configured_inbox = has_configured_inbox
         self.remote_inboxes = remote_inboxs
 
 
-def _set_variable_p2p(self, key: str, payload: bytes, receiver: CL.Participant):
-    if not self.vt_p2p_ctx.remote_inboxes.get(receiver.user_id, ""):
-        inbox = self.get_variable_with_remote_storage("inbox", receiver)
+def _set_variable_p2p(cl, key: str, payload: bytes, receiver: CL.Participant):
+    if not cl.vt_p2p_ctx.remote_inboxes.get(receiver.user_id, ""):
+        inbox = cl.get_variable_with_remote_storage("inbox", receiver)
         vt_inbox_dic = json.loads(inbox)
         if isinstance(vt_inbox_dic["tls_cert"], list):
             vt_inbox_dic["tls_cert"] = bytes(vt_inbox_dic["tls_cert"])
@@ -147,8 +146,8 @@ def _set_variable_p2p(self, key: str, payload: bytes, receiver: CL.Participant):
         )
         if not inbox.addr:
             inbox = None
-        self.vt_p2p_ctx.remote_inboxes.update({receiver.user_id: inbox})
-    remote_inbox = self.vt_p2p_ctx.remote_inboxes.get(receiver.user_id, "")
+        cl.vt_p2p_ctx.remote_inboxes.update({receiver.user_id: inbox})
+    remote_inbox = cl.vt_p2p_ctx.remote_inboxes.get(receiver.user_id, "")
     if remote_inbox:
         ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         cert = x509.load_der_x509_certificate(remote_inbox.tls_cert)
@@ -161,7 +160,7 @@ def _set_variable_p2p(self, key: str, payload: bytes, receiver: CL.Participant):
         stripped_addr = remote_inbox.addr.strip("https://")
         conn = HTTPSConnection(stripped_addr, context=ctx)
         headers = {
-            "user_id": self.get_user_id(),
+            "user_id": cl.get_user_id(),
             "key": key,
             "token": remote_inbox.vt_jwt,
         }
@@ -176,28 +175,27 @@ def _set_variable_p2p(self, key: str, payload: bytes, receiver: CL.Participant):
         raise Exception("Remote inbox: not available")
 
 
-def _get_variable_p2p(self, key: str, sender: CL.Participant) -> bytes:
+def _get_variable_p2p(cl, key: str, sender: CL.Participant) -> bytes:
     # send inbox information to the sender by remote_storage
-    if not sender.user_id in self.vt_p2p_ctx.has_configured_inbox:
+    if not sender.user_id in cl.vt_p2p_ctx.has_configured_inbox:
         # create inbox if it does not exist
-        with self.vt_p2p_ctx.has_created_inbox.lock():
+        with cl.vt_p2p_ctx.has_created_inbox.lock():
             if (
-                self.vt_p2p_ctx.public_addr
-                and self.vt_p2p_ctx.has_created_inbox._value == False
+                cl.vt_p2p_ctx.public_addr
+                and cl.vt_p2p_ctx.has_created_inbox._value == False
             ):
-                with self.vt_p2p_ctx.inbox_server.write():
-                    self.vt_p2p_ctx.inbox_server._value = VTInboxServer()
-                self.vt_p2p_ctx.has_created_inbox._value = True
+                cl.vt_p2p_ctx.inbox_server = VTInboxServer()
+                cl.vt_p2p_ctx.has_created_inbox._value = True
         # generate vt_inbox information for the sender
-        if self.vt_p2p_ctx.public_addr:
-            jwt_secret = self.vt_p2p_ctx.inbox_server.jwt_secret
+        if cl.vt_p2p_ctx.public_addr:
+            jwt_secret = cl.vt_p2p_ctx.inbox_server.jwt_secret
             vt_jwt = jwt.encode(
                 {"user_id": sender.user_id}, jwt_secret, algorithm="HS256"
             )
             vt_inbox = VTInbox(
-                f"https://{self.vt_p2p_ctx.public_addr}:{self.vt_p2p_ctx.inbox_server.port}",
+                f"https://{cl.vt_p2p_ctx.public_addr}:{cl.vt_p2p_ctx.inbox_server.port}",
                 vt_jwt,
-                self.vt_p2p_ctx.inbox_server.tls_cert,
+                cl.vt_p2p_ctx.inbox_server.tls_cert,
             )
         else:
             vt_inbox = VTInbox("", "", b"")
@@ -208,33 +206,33 @@ def _get_variable_p2p(self, key: str, sender: CL.Participant) -> bytes:
                 "tls_cert": list(vt_inbox.tls_cert),
             }
         )
-        self.set_variable_with_remote_storage(
+        cl.set_variable_with_remote_storage(
             "inbox", bytes(vt_inbox_vec, encoding="utf-8"), [sender]
         )
-        self.vt_p2p_ctx.has_configured_inbox.add(sender.user_id)
-    if self.vt_p2p_ctx.public_addr == "":
+        cl.vt_p2p_ctx.has_configured_inbox.add(sender.user_id)
+    if cl.vt_p2p_ctx.public_addr == "":
         raise Exception("Remote inbox: not available")
     tx = Queue()
-    with self.vt_p2p_ctx.inbox_server.read():
-        inbox_server = self.vt_p2p_ctx.inbox_server
-        with inbox_server.data_map.read():
-            data = inbox_server.data_map.get((sender.user_id, key), "")
-            if data:
-                return data
-        with inbox_server.notification_channels.write():
-            inbox_server.notification_channels.update({(sender.user_id, key): tx})
-        # try again after creating the channel
-        with inbox_server.data_map.read():
-            data = inbox_server.data_map.get((sender.user_id, key), "")
-            if data:
-                return data
+
+    inbox_server = cl.vt_p2p_ctx.inbox_server
+    with inbox_server.data_map.read():
+        data = inbox_server.data_map.get((sender.user_id, key), "")
+        if data:
+            return data
+    with inbox_server.notification_channels.write():
+        inbox_server.notification_channels.update({(sender.user_id, key): tx})
+    # try again after creating the channel
+    with inbox_server.data_map.read():
+        data = inbox_server.data_map.get((sender.user_id, key), "")
+        if data:
+            return data
     while tx.empty():
         continue
-    with self.vt_p2p_ctx.inbox_server.read():
-        inbox_server = self.vt_p2p_ctx.inbox_server
-        with inbox_server.data_map.read():
-            data = inbox_server.data_map.get((sender.user_id, key), "")
-            if data:
-                return data
-            else:
-                raise Exception("Fail to retrieve data from the inbox")
+    
+    inbox_server = cl.vt_p2p_ctx.inbox_server
+    with inbox_server.data_map.read():
+        data = inbox_server.data_map.get((sender.user_id, key), "")
+        if data:
+            return data
+        else:
+            raise Exception("Fail to retrieve data from the inbox")
