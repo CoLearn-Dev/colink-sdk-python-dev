@@ -13,9 +13,10 @@ from queue import Queue
 import time
 from cryptography import x509
 from cryptography.hazmat.primitives.serialization import Encoding
-from .application import Mutex, RWLock
+from .application import Mutex
 from tempfile import NamedTemporaryFile
 from .tls_utils import gen_cert
+
 
 class VTInbox:
     def __init__(self, addr: str, vt_jwt: str, tls_cert: bytes):
@@ -56,13 +57,11 @@ class VTInBox_RequestHandler(BaseHTTPRequestHandler):
         # payload
         length = int(self.headers.get("content-length"))
         body = self.rfile.read(length)
-        with data.write():
-            data.update({(user_id, key): body})
-        with notification_channels.read():
-            nc = notification_channels.get((user_id, key), "")
-            if nc:
-                nc.put(1)  # send
-            self._send_response(Status_OK)
+        data[(user_id, key)] = body
+        nc = notification_channels.get((user_id, key), "")
+        if nc:
+            nc.put(1)  # send
+        self._send_response(Status_OK)
 
 
 def server_maintainer(server, q):
@@ -88,8 +87,8 @@ class VTInboxServer:
         if socket.socket().connect_ex(("0.0.0.0", port)) == 0:
             port = random.randint(10000, 30000)
         httpd = HTTPServer(("0.0.0.0", port), VTInBox_RequestHandler)
-        httpd.data = RWLock(dict())  # pass to http request handler
-        httpd.notification_channels = RWLock(dict())
+        httpd.data = dict()  # pass to http request handler
+        httpd.notification_channels = dict()
         httpd.jwt_secret = jwt_secret
         httpd.socket = ssl.wrap_socket(
             httpd.socket,
@@ -129,7 +128,7 @@ class VtP2pCtx:
         remote_inboxs: Mapping[str, VTInbox] = {},
     ):
         self.public_addr = public_addr
-        self.has_created_inbox = Mutex(has_created_inbox)
+        self.has_created_inbox = has_created_inbox
         self.inbox_server = inbox_server
         self.has_configured_inbox = has_configured_inbox
         self.remote_inboxes = remote_inboxs
@@ -179,13 +178,9 @@ def _get_variable_p2p(cl, key: str, sender: CL.Participant) -> bytes:
     # send inbox information to the sender by remote_storage
     if not sender.user_id in cl.vt_p2p_ctx.has_configured_inbox:
         # create inbox if it does not exist
-        with cl.vt_p2p_ctx.has_created_inbox.lock():
-            if (
-                cl.vt_p2p_ctx.public_addr
-                and cl.vt_p2p_ctx.has_created_inbox._value == False
-            ):
-                cl.vt_p2p_ctx.inbox_server = VTInboxServer()
-                cl.vt_p2p_ctx.has_created_inbox._value = True
+        if cl.vt_p2p_ctx.public_addr and cl.vt_p2p_ctx.has_created_inbox == False:
+            cl.vt_p2p_ctx.inbox_server = VTInboxServer()
+            cl.vt_p2p_ctx.has_created_inbox = True
         # generate vt_inbox information for the sender
         if cl.vt_p2p_ctx.public_addr:
             jwt_secret = cl.vt_p2p_ctx.inbox_server.jwt_secret
@@ -213,26 +208,20 @@ def _get_variable_p2p(cl, key: str, sender: CL.Participant) -> bytes:
     if cl.vt_p2p_ctx.public_addr == "":
         raise Exception("Remote inbox: not available")
     tx = Queue()
-
     inbox_server = cl.vt_p2p_ctx.inbox_server
-    with inbox_server.data_map.read():
-        data = inbox_server.data_map.get((sender.user_id, key), "")
-        if data:
-            return data
-    with inbox_server.notification_channels.write():
-        inbox_server.notification_channels.update({(sender.user_id, key): tx})
+    data = inbox_server.data_map.get((sender.user_id, key), "")
+    if data:
+        return data
+    inbox_server.notification_channels[(sender.user_id, key)] = tx
     # try again after creating the channel
-    with inbox_server.data_map.read():
-        data = inbox_server.data_map.get((sender.user_id, key), "")
-        if data:
-            return data
+    data = inbox_server.data_map.get((sender.user_id, key), "")
+    if data:
+        return data
     while tx.empty():
         continue
-    
     inbox_server = cl.vt_p2p_ctx.inbox_server
-    with inbox_server.data_map.read():
-        data = inbox_server.data_map.get((sender.user_id, key), "")
-        if data:
-            return data
-        else:
-            raise Exception("Fail to retrieve data from the inbox")
+    data = inbox_server.data_map.get((sender.user_id, key), "")
+    if data:
+        return data
+    else:
+        raise Exception("Fail to retrieve data from the inbox")
