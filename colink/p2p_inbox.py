@@ -144,7 +144,7 @@ def _set_variable_p2p(cl, key: str, payload: bytes, receiver: CL.Participant):
         )
         if not inbox.addr:
             inbox = None
-        cl.vt_p2p_ctx.remote_inboxes.update({receiver.user_id: inbox})
+        cl.vt_p2p_ctx.remote_inboxes[receiver.user_id] = inbox
     remote_inbox = cl.vt_p2p_ctx.remote_inboxes.get(receiver.user_id, "")
     if remote_inbox:
         ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
