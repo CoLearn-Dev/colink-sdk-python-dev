@@ -13,7 +13,6 @@ from queue import Queue
 import time
 from cryptography import x509
 from cryptography.hazmat.primitives.serialization import Encoding
-from .application import Mutex
 from tempfile import NamedTemporaryFile
 from .tls_utils import gen_cert
 
