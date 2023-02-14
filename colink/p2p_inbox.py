@@ -10,9 +10,6 @@ import socket
 import random
 import threading
 from threading import Condition
-from queue import Queue
-import time
-import inspect
 import ctypes
 import atexit
 from cryptography import x509
