@@ -142,7 +142,7 @@ class VtP2pCtx:
 
 
 def _set_variable_p2p(cl, key: str, payload: bytes, receiver: CL.Participant):
-    if not cl.vt_p2p_ctx.remote_inboxes.get(receiver.user_id, ""):
+    if not cl.vt_p2p_ctx.remote_inboxes.get(receiver.user_id, None):
         inbox = cl.get_variable_with_remote_storage("inbox", receiver)
         vt_inbox_dic = json.loads(inbox)
         if isinstance(vt_inbox_dic["tls_cert"], list):
@@ -153,8 +153,8 @@ def _set_variable_p2p(cl, key: str, payload: bytes, receiver: CL.Participant):
         if not inbox.addr:
             inbox = None
         cl.vt_p2p_ctx.remote_inboxes[receiver.user_id] = inbox
-    remote_inbox = cl.vt_p2p_ctx.remote_inboxes.get(receiver.user_id, "")
-    if remote_inbox:
+    remote_inbox = cl.vt_p2p_ctx.remote_inboxes.get(receiver.user_id, None)
+    if remote_inbox is not None:
         ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         cert = x509.load_der_x509_certificate(remote_inbox.tls_cert)
         cert_file = NamedTemporaryFile()
