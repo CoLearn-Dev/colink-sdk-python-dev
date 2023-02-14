@@ -211,7 +211,6 @@ class CoLinkProtocol:
                         if cl.vt_p2p_ctx.inbox_server is not None:
                             cl.vt_p2p_ctx.inbox_server = None
                         self.cl.finish_task(task.task_id)
-                        print('task finished!',file=open("1.txt","a"))
                         logging.info("finnish task:%s", task.task_id)
                 else:
                     logging.error("Pull Task Error.")

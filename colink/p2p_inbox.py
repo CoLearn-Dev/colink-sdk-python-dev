@@ -61,16 +61,21 @@ class VTInBox_RequestHandler(BaseHTTPRequestHandler):
         length = int(self.headers.get("content-length"))
         body = self.rfile.read(length)
         data[(user_id, key)] = body
-        nc = notification_channels.get((user_id, key), "")
-        if nc:
-            nc.put(1)  # send
+        nc = notification_channels.get((user_id, key), None)
+        if nc is not None:
+            nc.acquire()
+            nc.notify()
+            nc.release()
         self._send_response(Status_OK)
+
 
 # Kill thread code from https://github.com/fitoprincipe/ipygee/blob/master/ipygee/threading.py#L12
 def kill_thread(th):
     tid = th.ident
     """Raises an exception in the threads with id tid"""
-    res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), ctypes.py_object(SystemExit))
+    res = ctypes.pythonapi.PyThreadState_SetAsyncExc(
+        ctypes.c_long(tid), ctypes.py_object(SystemExit)
+    )
     if res == 0:
         raise ValueError("invalid thread id")
     elif res != 1:
@@ -78,6 +83,7 @@ def kill_thread(th):
         # and you should call it again with exc=NULL to revert the effect"""
         ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, None)
         raise SystemError("PyThreadState_SetAsyncExc failed")
+
 
 class VTInboxServer:
     def __init__(self):
@@ -113,9 +119,10 @@ class VTInboxServer:
         self.data_map = httpd.data
         self.notification_channels = httpd.notification_channels
         atexit.register(self.clean)
-    
+
     def clean(self):
         kill_thread(self.server_thread)
+
 
 class VtP2pCtx:
     def __init__(
@@ -206,17 +213,13 @@ def _get_variable_p2p(cl, key: str, sender: CL.Participant) -> bytes:
         cl.vt_p2p_ctx.has_configured_inbox.add(sender.user_id)
     if cl.vt_p2p_ctx.public_addr == "":
         raise Exception("Remote inbox: not available")
-    tx = Queue()
+    tx = Condition()
     inbox_server = cl.vt_p2p_ctx.inbox_server
     inbox_server.notification_channels[(sender.user_id, key)] = tx
+    tx.acquire()
+    tx.wait()
     data = inbox_server.data_map.get((sender.user_id, key), None)
-    if data is not None:
-        return data
-    while tx.empty():
-        time.sleep(0.01)
-        continue
-    inbox_server = cl.vt_p2p_ctx.inbox_server
-    data = inbox_server.data_map.get((sender.user_id, key), None)
+    tx.release()
     if data is not None:
         return data
     else:
