@@ -105,14 +105,12 @@ class VTInboxServer:
         )
         cert_file.close()
         priv_key_file.close()
-        shutdown_channel = Condition()
         self.server_thread = threading.Thread(target=httpd.serve_forever, args=())
         self.server_thread.start()
         self.port = port
         self.jwt_secret = jwt_secret
         self.tls_cert = tls_cert_der
         self.data_map = httpd.data
-        self.shutdown_channel = shutdown_channel
         self.notification_channels = httpd.notification_channels
         atexit.register(self.clean)
     
