@@ -32,6 +32,9 @@ jobs:
         run: pip install  .
       - name: Install Pytest
         run: pip install pytest
-      - name: Run test
-        run: pytest test
-        timeout-minutes: 30
+      - name: Run test1
+        run: pytest test/test_protocol_variable_transfer.py
+        timeout-minutes: 4
+      - name: Run test2
+        run: pytest test/test_python.py
+        timeout-minutes: 4

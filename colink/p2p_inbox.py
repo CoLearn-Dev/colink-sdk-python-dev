@@ -216,11 +216,11 @@ def _get_variable_p2p(cl, key: str, sender: CL.Participant) -> bytes:
         raise Exception("Remote inbox: not available")
     tx = Condition()
     inbox_server = cl.vt_p2p_ctx.inbox_server
-    inbox_server.notification_channels[(sender.user_id, key)] = tx
     data = inbox_server.data_map.get((sender.user_id, key), None)
     if data is not None:
         return data
     tx.acquire()
+    inbox_server.notification_channels[(sender.user_id, key)] = tx
     tx.wait()
     data = inbox_server.data_map.get((sender.user_id, key), None)
     tx.release()
