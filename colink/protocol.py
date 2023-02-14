@@ -113,7 +113,7 @@ class ProtocolOperator:
                             break
                     else:
                         counter = 0
-                    # here we don't directly sleep 32~64s like rust because we have to detect sub-thread errors
+                # here we don't directly sleep 32~64s like rust because we have to detect sub-thread errors
                 time.sleep(0.01)
 
     def run_attach(self, cl: CoLink):
@@ -209,8 +209,9 @@ class CoLinkProtocol:
                             )
                             raise e
                         if cl.vt_p2p_ctx.inbox_server is not None:
-                            cl.vt_p2p_ctx.inbox_server.shutdown_channel.put(1)
+                            cl.vt_p2p_ctx.inbox_server = None
                         self.cl.finish_task(task.task_id)
+                        print('task finished!',file=open("1.txt","a"))
                         logging.info("finnish task:%s", task.task_id)
                 else:
                     logging.error("Pull Task Error.")

@@ -9,8 +9,12 @@ import ssl
 import socket
 import random
 import threading
+from threading import Condition
 from queue import Queue
 import time
+import inspect
+import ctypes
+import atexit
 from cryptography import x509
 from cryptography.hazmat.primitives.serialization import Encoding
 from tempfile import NamedTemporaryFile
@@ -62,14 +66,18 @@ class VTInBox_RequestHandler(BaseHTTPRequestHandler):
             nc.put(1)  # send
         self._send_response(Status_OK)
 
-
-def server_maintainer(server, q):
-    while True:
-        if not q.empty():
-            server.shutdown()
-            break
-        time.sleep(0.01)
-
+# Kill thread code from https://github.com/fitoprincipe/ipygee/blob/master/ipygee/threading.py#L12
+def kill_thread(th):
+    tid = th.ident
+    """Raises an exception in the threads with id tid"""
+    res = ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(tid), ctypes.py_object(SystemExit))
+    if res == 0:
+        raise ValueError("invalid thread id")
+    elif res != 1:
+        # """if it returns a number greater than one, you're in trouble,
+        # and you should call it again with exc=NULL to revert the effect"""
+        ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, None)
+        raise SystemError("PyThreadState_SetAsyncExc failed")
 
 class VTInboxServer:
     def __init__(self):
@@ -97,25 +105,19 @@ class VTInboxServer:
         )
         cert_file.close()
         priv_key_file.close()
-        shutdown_channel = Queue()
-        thread_server = threading.Thread(target=httpd.serve_forever, args=())
-        thread_server.start()
-        thread_maintain = threading.Thread(
-            target=server_maintainer,
-            args=(
-                httpd,
-                shutdown_channel,
-            ),
-            daemon=True,
-        )
-        thread_maintain.start()
+        shutdown_channel = Condition()
+        self.server_thread = threading.Thread(target=httpd.serve_forever, args=())
+        self.server_thread.start()
         self.port = port
         self.jwt_secret = jwt_secret
         self.tls_cert = tls_cert_der
         self.data_map = httpd.data
         self.shutdown_channel = shutdown_channel
         self.notification_channels = httpd.notification_channels
-
+        atexit.register(self.clean)
+    
+    def clean(self):
+        kill_thread(self.server_thread)
 
 class VtP2pCtx:
     def __init__(
@@ -208,11 +210,7 @@ def _get_variable_p2p(cl, key: str, sender: CL.Participant) -> bytes:
         raise Exception("Remote inbox: not available")
     tx = Queue()
     inbox_server = cl.vt_p2p_ctx.inbox_server
-    data = inbox_server.data_map.get((sender.user_id, key), None)
-    if data is not None:
-        return data
     inbox_server.notification_channels[(sender.user_id, key)] = tx
-    # try again after creating the channel
     data = inbox_server.data_map.get((sender.user_id, key), None)
     if data is not None:
         return data

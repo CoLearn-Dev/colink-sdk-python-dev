@@ -2,6 +2,7 @@ import logging
 from typing import List
 import colink as CL
 import threading
+from .p2p_inbox import _get_variable_p2p, _set_variable_p2p
 
 
 def set_variable_with_remote_storage(
@@ -33,6 +34,7 @@ def set_variable_with_remote_storage(
     payload = params.SerializeToString()
     self.run_task("remote_storage.create", payload, new_participants, False)
 
+
 def get_variable_with_remote_storage(self, key: str, sender: CL.Participant) -> bytes:
     if self.task_id is None:
         logging.error("get_variable task_id not found")
@@ -43,12 +45,14 @@ def get_variable_with_remote_storage(self, key: str, sender: CL.Participant) -> 
     res = self.read_or_wait(key)
     return res
 
+
 def set_variable(self, key: str, payload: bytes, receivers: List[CL.Participant]):
     def thread_set_var(cl, key: str, payload: bytes, receiver: CL.Participant):
         try:
-            cl._set_variable_p2p(key, payload, receiver)
+            _set_variable_p2p(cl, key, payload, receiver)
         except Exception as e:
             cl.set_variable_with_remote_storage(key, payload, [receiver])
+
     threads = []
     for receiver in receivers:
         threads.append(
@@ -64,7 +68,7 @@ def get_variable(self, key: str, sender: CL.Participant) -> bytes:
     if self.task_id is None:
         raise Exception("task_id not found")
     try:
-        res = self._get_variable_p2p(key, sender)
+        res = _get_variable_p2p(self, key, sender)
     except Exception as e:
         res = self.get_variable_with_remote_storage(key, sender)
     return res
