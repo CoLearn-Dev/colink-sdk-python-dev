@@ -112,6 +112,7 @@ class VTInboxServer:
         cert_file.close()
         priv_key_file.close()
         self.server_thread = threading.Thread(target=httpd.serve_forever, args=())
+        httpd.thread = self.server_thread
         self.server_thread.start()
         self.port = port
         self.jwt_secret = jwt_secret
@@ -216,6 +217,9 @@ def _get_variable_p2p(cl, key: str, sender: CL.Participant) -> bytes:
     tx = Condition()
     inbox_server = cl.vt_p2p_ctx.inbox_server
     inbox_server.notification_channels[(sender.user_id, key)] = tx
+    data = inbox_server.data_map.get((sender.user_id, key), None)
+    if data is not None:
+        return data
     tx.acquire()
     tx.wait()
     data = inbox_server.data_map.get((sender.user_id, key), None)
