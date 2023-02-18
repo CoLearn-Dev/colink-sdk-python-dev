@@ -7,8 +7,6 @@ import pika
 import grpc
 import secp256k1
 import copy
-from contextlib import contextmanager
-from threading import Lock
 from colink.colink_pb2 import *
 from colink.colink_pb2_grpc import CoLinkStub, CoLinkServicer
 from colink.colink_remote_storage_pb2 import *

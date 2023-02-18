@@ -66,7 +66,7 @@ class VTInBox_RequestHandler(BaseHTTPRequestHandler):
         self._send_response(Status_OK)
 
 
-# Kill thread code from https://github.com/fitoprincipe/ipygee/blob/master/ipygee/threading.py#L12
+# Kill thread code from https://github.com/fitoprincipe/ipygee/blob/ab622c0c8b4f66b7e131cf6b7aeb08e751ceb513/ipygee/threading.py#L12
 def kill_thread(th):
     tid = th.ident
     """Raises an exception in the threads with id tid"""
