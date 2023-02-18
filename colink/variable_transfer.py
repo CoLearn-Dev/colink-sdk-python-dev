@@ -1,8 +1,9 @@
 import logging
-from typing import List
+from typing import List, Any
 import colink as CL
 import threading
 from .p2p_inbox import _get_variable_p2p, _set_variable_p2p
+from .application import try_convert_to_bytes
 
 
 def set_variable_with_remote_storage(
@@ -46,13 +47,14 @@ def get_variable_with_remote_storage(self, key: str, sender: CL.Participant) -> 
     return res
 
 
-def set_variable(self, key: str, payload: bytes, receivers: List[CL.Participant]):
+def set_variable(self, key: str, payload: Any, receivers: List[CL.Participant]):
     def thread_set_var(cl, key: str, payload: bytes, receiver: CL.Participant):
         try:
             _set_variable_p2p(cl, key, payload, receiver)
         except Exception as e:
             cl.set_variable_with_remote_storage(key, payload, [receiver])
 
+    payload = try_convert_to_bytes(payload)
     threads = []
     for receiver in receivers:
         threads.append(
