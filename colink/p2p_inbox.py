@@ -39,10 +39,10 @@ class VTInBox_RequestHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         data = self.server.data
         notification_channels = self.server.notification_channels
-        user_id = self.headers.get("user_id", "")
-        key = self.headers.get("key", "")
-        token = self.headers.get("token")
-        if not user_id or not key or not token:
+        user_id = self.headers.get("user_id", None)
+        key = self.headers.get("key", None)
+        token = self.headers.get("token", None)
+        if user_id is None or key is None or token is None:
             self._send_response(Status_BAD_REQUEST)
             return
         try:
@@ -125,7 +125,7 @@ class VTInboxServer:
 class VtP2pCtx:
     def __init__(
         self,
-        public_addr: str = "",
+        public_addr: str = None,
         has_created_inbox: bool = False,
         inbox_server: VTInboxServer = None,
         has_configured_inbox: Set[str] = set(),
@@ -197,7 +197,7 @@ def _get_variable_p2p(cl, key: str, sender: CL.Participant) -> bytes:
                 cl.vt_p2p_ctx.inbox_server.tls_cert,
             )
         else:
-            vt_inbox = VTInbox("", "", b"")
+            vt_inbox = VTInbox(None, None, None)
         vt_inbox_vec = json.dumps(
             {
                 "addr": vt_inbox.addr,
@@ -209,7 +209,7 @@ def _get_variable_p2p(cl, key: str, sender: CL.Participant) -> bytes:
             "inbox", bytes(vt_inbox_vec, encoding="utf-8"), [sender]
         )
         cl.vt_p2p_ctx.has_configured_inbox.add(sender.user_id)
-    if cl.vt_p2p_ctx.public_addr == "":
+    if cl.vt_p2p_ctx.public_addr is None:
         raise Exception("Remote inbox: not available")
     tx = Condition()
     inbox_server = cl.vt_p2p_ctx.inbox_server

@@ -35,7 +35,7 @@ class ProtocolOperator:
         self,
         cl: CoLink = None,
         keep_alive_when_disconnect: bool = False,
-        vt_public_addr: str = "",
+        vt_public_addr: str = None,
     ):
         if cl is None:
             cl, keep_alive_when_disconnect, vt_public_addr = _cl_parse_args()
@@ -145,7 +145,6 @@ class CoLinkProtocol:
                 )
             ]
         )
-        queue_name = ""
         if res is not None:
             queue_name = byte_to_str(res[0].payload)
         else:
@@ -227,22 +226,22 @@ def _cl_parse_args() -> Tuple[CoLink, bool, str]:
     parser.add_argument("--keep-alive-when-disconnect", action="store_true", help="")
     parser.add_argument("--vt-public-addr", type=str, default="", help="")
     args = parser.parse_args()
-    addr = args.addr if args.addr else os.environ.get("COLINK_CORE_ADDR", "")
-    jwt = args.jwt if args.jwt else os.environ.get("COLINK_JWT", "")
-    ca = args.ca if args.ca else os.environ.get("COLINK_CA_CERT", "")
-    cert = args.cert if args.cert else os.environ.get("COLINK_CLIENT_CERT", "")
-    key = args.key if args.key else os.environ.get("COLINK_CLIENT_KEY", "")
+    addr = args.addr if args.addr else os.environ.get("COLINK_CORE_ADDR", None)
+    jwt = args.jwt if args.jwt else os.environ.get("COLINK_JWT", None)
+    ca = args.ca if args.ca else os.environ.get("COLINK_CA_CERT", None)
+    cert = args.cert if args.cert else os.environ.get("COLINK_CLIENT_CERT", None)
+    key = args.key if args.key else os.environ.get("COLINK_CLIENT_KEY", None)
     args.keep_alive_when_disconnect = args.keep_alive_when_disconnect or bool(
-        os.environ.get("COLINK_KEEP_ALIVE_WHEN_DISCONNECT", "")
+        os.environ.get("COLINK_KEEP_ALIVE_WHEN_DISCONNECT", None)
     )
     vt_public_addr = (
         args.vt_public_addr
         if args.vt_public_addr
-        else os.environ.get("COLINK_VT_PUBLIC_ADDR", "")
+        else os.environ.get("COLINK_VT_PUBLIC_ADDR", None)
     )
     cl = CoLink(addr, jwt)
-    if ca != "":
+    if ca is not None:
         cl.ca_certificate(ca)
-    if cert != "" and key != "":
+    if cert is not None and key is not None:
         cl.identity(cert, key)
     return cl, args.keep_alive_when_disconnect, vt_public_addr
