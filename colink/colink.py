@@ -1,4 +1,5 @@
 from typing import Tuple
+from .p2p_inbox import VtP2pCtx
 
 
 class CoLink:
@@ -71,7 +72,12 @@ class CoLink:
         remote_storage_update,
         remote_storage_delete,
     )
-    from .variable_transfer import set_variable, get_variable
+    from .variable_transfer import (
+        set_variable_with_remote_storage,
+        get_variable_with_remote_storage,
+        set_variable,
+        get_variable,
+    )
     from .participant_id import get_participant_index
     from .registry import update_registries
     from .lock_key import lock, lock_with_retry_time, unlock

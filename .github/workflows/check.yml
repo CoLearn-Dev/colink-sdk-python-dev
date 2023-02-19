@@ -33,5 +33,5 @@ jobs:
       - name: Install Pytest
         run: pip install pytest
       - name: Run test
-        run: pytest test/test_python.py
-        timeout-minutes: 30
+        run: pytest test
+        timeout-minutes: 5

@@ -99,7 +99,7 @@ def set_task_id(self, task_id: str):
 
 
 def get_task_id(self) -> str:
-    if len(self.task_id) == 0:
+    if self.task_id is None:
         logging.error("task_id not found")
         raise Exception("task_id not found")
     return copy.deepcopy(self.task_id)

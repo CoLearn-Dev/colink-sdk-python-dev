@@ -8,12 +8,13 @@ import random
 import threading
 from threading import Thread
 from .application import *
+from .p2p_inbox import VtP2pCtx
 from .colink import CoLink
 
 
-def thread_func(q, protocol_and_role, cl, user_func):
+def thread_func(q, protocol_and_role, cl, vt_public_addr, user_func):
     try:
-        cl_app = CoLinkProtocol(protocol_and_role, cl, user_func)
+        cl_app = CoLinkProtocol(protocol_and_role, cl, vt_public_addr, user_func)
         cl_app.start()
     except Exception as e:
         q.put(e)
@@ -30,9 +31,14 @@ class ProtocolOperator:
 
         return decorator
 
-    def run(self, cl: CoLink = None, keep_alive_when_disconnect: bool = False):
+    def run(
+        self,
+        cl: CoLink = None,
+        keep_alive_when_disconnect: bool = False,
+        vt_public_addr: str = None,
+    ):
         if cl is None:
-            cl, keep_alive_when_disconnect = _cl_parse_args()
+            cl, keep_alive_when_disconnect, vt_public_addr = _cl_parse_args()
         operator_funcs = {}
         protocols = set()
         failed_protocols = set()
@@ -71,7 +77,7 @@ class ProtocolOperator:
             user_func = self.mapping[protocol_and_role]
             t = threading.Thread(
                 target=thread_func,
-                args=(q, protocol_and_role, cl, user_func),
+                args=(q, protocol_and_role, cl, vt_public_addr, user_func),
                 daemon=True,
             )
             threads.append(t)
@@ -107,11 +113,11 @@ class ProtocolOperator:
                             break
                     else:
                         counter = 0
-                    # here we don't directly sleep 32~64s like rust because we have to detect sub-thread errors
+                # here we don't directly sleep 32~64s like rust because we have to detect sub-thread errors
                 time.sleep(0.01)
 
     def run_attach(self, cl: CoLink):
-        thread = Thread(target=self.run, args=(cl,), daemon=True)
+        thread = Thread(target=self.run, args=(cl, False, "127.0.0.1"), daemon=True)
         thread.start()
 
 
@@ -120,10 +126,12 @@ class CoLinkProtocol:
         self,
         protocol_and_role: str,
         cl: CoLink,
+        vt_public_addr: str,
         user_func,
     ):
         self.protocol_and_role = protocol_and_role
         self.cl = cl
+        self.vt_public_addr = vt_public_addr
         self.user_func = user_func
 
     def start(self):
@@ -137,7 +145,6 @@ class CoLinkProtocol:
                 )
             ]
         )
-        queue_name = ""
         if res is not None:
             queue_name = byte_to_str(res[0].payload)
         else:
@@ -190,6 +197,7 @@ class CoLinkProtocol:
                         # begin user func
                         cl = self.cl
                         cl.set_task_id(task.task_id)
+                        cl.vt_p2p_ctx = VtP2pCtx(self.vt_public_addr)
                         try:
                             self.user_func(cl, task.protocol_param, task.participants)
                         except Exception as e:
@@ -199,6 +207,8 @@ class CoLinkProtocol:
                                 )
                             )
                             raise e
+                        if cl.vt_p2p_ctx.inbox_server is not None:
+                            cl.vt_p2p_ctx.inbox_server = None
                         self.cl.finish_task(task.task_id)
                         logging.info("finnish task:%s", task.task_id)
                 else:
@@ -206,7 +216,7 @@ class CoLinkProtocol:
                     raise Exception("Pull Task Error.")
 
 
-def _cl_parse_args() -> Tuple[CoLink, bool]:
+def _cl_parse_args() -> Tuple[CoLink, bool, str]:
     parser = argparse.ArgumentParser(description="protocol operator entry")
     parser.add_argument("--addr", type=str, default="", help="")
     parser.add_argument("--jwt", type=str, default="", help="")
@@ -214,18 +224,24 @@ def _cl_parse_args() -> Tuple[CoLink, bool]:
     parser.add_argument("--cert", type=str, default="", help="")
     parser.add_argument("--key", type=str, default="", help="")
     parser.add_argument("--keep-alive-when-disconnect", action="store_true", help="")
+    parser.add_argument("--vt-public-addr", type=str, default="", help="")
     args = parser.parse_args()
-    addr = args.addr if args.addr else os.environ.get("COLINK_CORE_ADDR", "")
-    jwt = args.jwt if args.jwt else os.environ.get("COLINK_JWT", "")
-    ca = args.ca if args.ca else os.environ.get("COLINK_CA_CERT", "")
-    cert = args.cert if args.cert else os.environ.get("COLINK_CLIENT_CERT", "")
-    key = args.key if args.key else os.environ.get("COLINK_CLIENT_KEY", "")
+    addr = args.addr if args.addr else os.environ.get("COLINK_CORE_ADDR", None)
+    jwt = args.jwt if args.jwt else os.environ.get("COLINK_JWT", None)
+    ca = args.ca if args.ca else os.environ.get("COLINK_CA_CERT", None)
+    cert = args.cert if args.cert else os.environ.get("COLINK_CLIENT_CERT", None)
+    key = args.key if args.key else os.environ.get("COLINK_CLIENT_KEY", None)
     args.keep_alive_when_disconnect = args.keep_alive_when_disconnect or bool(
-        os.environ.get("COLINK_KEEP_ALIVE_WHEN_DISCONNECT", "")
+        os.environ.get("COLINK_KEEP_ALIVE_WHEN_DISCONNECT", None)
+    )
+    vt_public_addr = (
+        args.vt_public_addr
+        if args.vt_public_addr
+        else os.environ.get("COLINK_VT_PUBLIC_ADDR", None)
     )
     cl = CoLink(addr, jwt)
-    if ca != "":
+    if ca is not None:
         cl.ca_certificate(ca)
-    if cert != "" and key != "":
+    if cert is not None and key is not None:
         cl.identity(cert, key)
-    return cl, args.keep_alive_when_disconnect
+    return cl, args.keep_alive_when_disconnect, vt_public_addr

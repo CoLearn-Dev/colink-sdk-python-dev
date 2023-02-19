@@ -22,6 +22,7 @@ class InstantServer:
                     'bash -c "$(curl -fsSL https://raw.githubusercontent.com/CoLearn-Dev/colinkctl/main/install_colink.sh)"',
                 ],
                 env={
+                    **os.environ,
                     "COLINK_INSTALL_SERVER_ONLY": "true",
                     "COLINK_INSTALL_SILENT": "true",
                 },
