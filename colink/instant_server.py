@@ -17,8 +17,6 @@ class InstantServer:
         if not os.path.exists(program):
             subprocess.Popen(
                 [
-                    "bash",
-                    "-c",
                     'bash -c "$(curl -fsSL https://raw.githubusercontent.com/CoLearn-Dev/colinkctl/main/install_colink.sh)"',
                 ],
                 env={
