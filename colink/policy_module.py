@@ -15,8 +15,8 @@ def policy_module_start(self):
         settings, timestamp = CL.Settings(), 0
     if settings.enable:
         self.unlock(lock)
-        return self.wait_for_applying(
-            timestamp
+        return wait_for_applying(
+            self, timestamp
         )  # Wait for the current timestamp to be applied.
     settings.enable = True
     payload = settings.SerializeToString()
@@ -27,7 +27,7 @@ def policy_module_start(self):
     self.unlock(lock)
     participants = [CL.Participant(user_id=self.get_user_id(), role="local")]
     self.run_task("policy_module", b"", participants, False)
-    self.wait_for_applying(timestamp)
+    wait_for_applying(self, timestamp)
 
 
 def policy_module_stop(self):
@@ -45,7 +45,7 @@ def policy_module_stop(self):
     timestamp = get_path_timestamp(
         self.update_entry("_policy_module:settings", payload)
     )
-    res = self.wait_for_applying(timestamp)
+    res = wait_for_applying(self, timestamp)
     self.unlock(lock)  # Unlock after the policy module truly stopped.
 
 
@@ -74,7 +74,7 @@ def policy_module_add_rule(self, rule: CL.Rule) -> str:
     )
     self.unlock(lock)
     if settings.enable:
-        self.wait_for_applying(timestamp)
+        wait_for_applying(self, timestamp)
     return rule_id
 
 
@@ -93,12 +93,12 @@ def policy_module_remove_rule(self, rule_id: str):
     )
     self.unlock(lock)
     if settings.enable:
-        self.wait_for_applying(timestamp)
+        wait_for_applying(self, timestamp)
 
 
-def wait_for_applying(self, timestamp: int):
+def wait_for_applying(cl, timestamp: int):
     key = "_policy_module:applied_settings_timestamp"
-    res = self.read_entries([CL.StorageEntry(key_name=key)])
+    res = cl.read_entries([CL.StorageEntry(key_name=key)])
     if res is not None:
         applied_settings_timestamp = byte_to_int(res[0].payload)
         if applied_settings_timestamp >= timestamp:
@@ -106,8 +106,8 @@ def wait_for_applying(self, timestamp: int):
         start_timestamp = get_path_timestamp(res[0].key_path) + 1
     else:
         start_timestamp = 0
-    queue_name = self.subscribe(key, start_timestamp)
-    subscriber = self.new_subscriber(queue_name)
+    queue_name = cl.subscribe(key, start_timestamp)
+    subscriber = cl.new_subscriber(queue_name)
     while True:
         data = subscriber.get_next()
         message = CL.SubscriptionMessage.FromString(data)
@@ -115,4 +115,4 @@ def wait_for_applying(self, timestamp: int):
             applied_settings_timestamp = byte_to_int(message.payload)
             if applied_settings_timestamp >= timestamp:
                 break
-    self.unsubscribe(queue_name)
+    cl.unsubscribe(queue_name)
