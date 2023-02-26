@@ -14,9 +14,7 @@ class InstantServer:
     def __init__(self):
         colink_home = get_colink_home()
         program = os.path.join(colink_home, "colink-server")
-        print(program)
         if not os.path.exists(program):
-            print('not exist')
             subprocess.Popen(
                 [
                     "bash",
@@ -26,8 +24,7 @@ class InstantServer:
                 env={
                     **os.environ,
                     "COLINK_INSTALL_SERVER_ONLY": "true",
-                    "COLINK_INSTALL_SILENT": "false",
-                    "COLINK_SERVER_VERSION":"v0.2.9"
+                    "COLINK_INSTALL_SILENT": "true",
                 },
             ).wait()
         self.id = str(uuid.uuid4())
@@ -71,7 +68,6 @@ class InstantServer:
                 and socket.socket().connect_ex(("127.0.0.1", self.port)) == 0
             ):
                 break
-            print('con fail!')
             time.sleep(0.01)
         self.host_token = open(os.path.join(working_dir, "host_token.txt"), "r").read()
         atexit.register(self.clean)
