@@ -138,9 +138,9 @@ class VtP2pCtx:
         self.remote_inboxes = remote_inboxs
 
 
-def _set_variable_p2p(cl, key: str, payload: bytes, receiver: CL.Participant):
+def _send_variable_p2p(cl, key: str, payload: bytes, receiver: CL.Participant):
     if not cl.vt_p2p_ctx.remote_inboxes.get(receiver.user_id, None):
-        inbox = cl.get_variable_with_remote_storage("inbox", receiver)
+        inbox = cl.recv_variable_with_remote_storage("inbox", receiver)
         vt_inbox_dic = json.loads(inbox)
         if isinstance(vt_inbox_dic["tls_cert"], list):
             vt_inbox_dic["tls_cert"] = bytes(vt_inbox_dic["tls_cert"])
@@ -178,7 +178,7 @@ def _set_variable_p2p(cl, key: str, payload: bytes, receiver: CL.Participant):
         raise Exception("Remote inbox: not available")
 
 
-def _get_variable_p2p(cl, key: str, sender: CL.Participant) -> bytes:
+def _recv_variable_p2p(cl, key: str, sender: CL.Participant) -> bytes:
     # send inbox information to the sender by remote_storage
     if not sender.user_id in cl.vt_p2p_ctx.has_configured_inbox:
         # create inbox if it does not exist
@@ -205,7 +205,7 @@ def _get_variable_p2p(cl, key: str, sender: CL.Participant) -> bytes:
                 "tls_cert": list(vt_inbox.tls_cert),
             }
         )
-        cl.set_variable_with_remote_storage(
+        cl.send_variable_with_remote_storage(
             "inbox", bytes(vt_inbox_vec, encoding="utf-8"), [sender]
         )
         cl.vt_p2p_ctx.has_configured_inbox.add(sender.user_id)

@@ -9,13 +9,13 @@ pop = ProtocolOperator(__name__)
 @pop.handle("test_variable_transfer:initiator")
 def run_initiator(cl: CoLink, param: bytes, participants: List[CL.Participant]):
     logging.info("test_variable_transfer:initiator protocol operator!")
-    cl.set_variable("output", param, participants[1:])
+    cl.send_variable("output", param, participants[1:])
 
 
 @pop.handle("test_variable_transfer:receiver")
 def run_receiver(cl: CoLink, param: bytes, participants: List[CL.Participant]):
     logging.info("test_variable_transfer:receiver protocol operator!")
-    receive_data = cl.get_variable("output", participants[0])
+    receive_data = cl.recv_variable("output", participants[0])
     cl.create_entry("tasks:{}:output".format(cl.get_task_id()), receive_data)
 
 

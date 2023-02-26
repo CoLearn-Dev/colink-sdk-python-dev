@@ -73,11 +73,15 @@ class CoLink:
         remote_storage_delete,
     )
     from .variable_transfer import (
-        set_variable_with_remote_storage,
-        get_variable_with_remote_storage,
-        set_variable,
-        get_variable,
+        send_variable_with_remote_storage,
+        recv_variable_with_remote_storage,
+        send_variable,
+        recv_variable,
     )
+    set_variable_with_remote_storage = send_variable_with_remote_storage
+    get_variable_with_remote_storage = recv_variable_with_remote_storage
+    set_variable = send_variable
+    get_variable = recv_variable
     from .participant_id import get_participant_index
     from .registry import update_registries
     from .lock_key import lock, lock_with_retry_time, unlock
