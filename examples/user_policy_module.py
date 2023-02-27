@@ -16,7 +16,7 @@ if __name__ == "__main__":
     rule_id = cl.policy_module_add_rule(
         CL.Rule(
             task_filter=CL.TaskFilter(protocol_name="greetings"),
-            action="approve",
+            action=CL.Action(type="approve"),
             priority=1,
         )
     )

@@ -7,6 +7,8 @@ import random
 import time
 import socket
 import atexit
+import requests
+import pika
 from colink import CoLink
 
 
@@ -25,6 +27,7 @@ class InstantServer:
                     **os.environ,
                     "COLINK_INSTALL_SERVER_ONLY": "true",
                     "COLINK_INSTALL_SILENT": "true",
+                    "COLINK_SERVER_VERSION": "v0.2.9",
                 },
             ).wait()
         self.id = str(uuid.uuid4())
@@ -40,6 +43,16 @@ class InstantServer:
         mq_api = os.environ.get(
             "COLINK_SERVER_MQ_API", "http://guest:guest@localhost:15672/api"
         )
+        response = requests.get(mq_api)
+        STATUS_OK = 200
+        assert response.status_code == STATUS_OK, "MQ_API connection failed"
+        parameters = pika.URLParameters(mq_amqp)
+        try:
+            connection = pika.BlockingConnection(parameters)
+            assert connection.is_open, "MQ_AMQP connection failed"
+            connection.close()
+        except Exception as error:
+            raise error
         self.process = subprocess.Popen(
             [
                 program,
@@ -59,8 +72,6 @@ class InstantServer:
             ],
             env={"COLINK_HOME": colink_home},
             cwd=working_dir,
-            stdout=DEVNULL,
-            stderr=DEVNULL,
         )
         while True:
             if (
@@ -98,7 +109,8 @@ class InstantRegistry(InstantServer):
         super().clean()
         colink_home = get_colink_home()
         registry_file = os.path.join(colink_home, "reg_config")
-        os.remove(registry_file)
+        if os.path.exists(registry_file):
+            os.remove(registry_file)
 
 
 def get_colink_home() -> str:

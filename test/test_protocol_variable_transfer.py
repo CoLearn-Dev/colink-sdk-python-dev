@@ -11,8 +11,8 @@ def run_initiator(cl: CoLink, param: bytes, participants: List[CL.Participant]):
     for i in range(8):
         key = f"output{i}"
         key2 = f"output_remote_storage{i}"
-        cl.set_variable(key, param, participants[1 : len(participants)])
-        cl.set_variable_with_remote_storage(
+        cl.send_variable(key, param, participants[1 : len(participants)])
+        cl.send_variable_with_remote_storage(
             key2, param, participants[1 : len(participants)]
         )
 
@@ -22,9 +22,9 @@ def run_receiver(cl: CoLink, param: bytes, participants: List[CL.Participant]):
     for i in range(8):
         key = f"output{i}"
         key2 = f"output_remote_storage{i}"
-        msg = cl.get_variable(key, participants[0])
+        msg = cl.recv_variable(key, participants[0])
         cl.create_entry(f"tasks:{cl.get_task_id()}:output{i}", msg)
-        msg = cl.get_variable_with_remote_storage(key2, participants[0])
+        msg = cl.recv_variable_with_remote_storage(key2, participants[0])
         cl.create_entry(f"tasks:{cl.get_task_id()}:output_remote_storage{i}", msg)
 
 
