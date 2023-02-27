@@ -71,7 +71,7 @@ class InstantServer:
                 "--inter-core-reverse-mode",
             ],
             env={"COLINK_HOME": colink_home},
-            cwd=working_dir
+            cwd=working_dir,
         )
         while True:
             if (
@@ -109,7 +109,8 @@ class InstantRegistry(InstantServer):
         super().clean()
         colink_home = get_colink_home()
         registry_file = os.path.join(colink_home, "reg_config")
-        os.remove(registry_file)
+        if os.path.exists(registry_file):
+            os.remove(registry_file)
 
 
 def get_colink_home() -> str:

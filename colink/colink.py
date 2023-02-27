@@ -58,6 +58,8 @@ class CoLink:
         get_user_id,
         start_protocol_operator,
         stop_protocol_operator,
+        generate_token_with_signature,
+        get_core_addr,
     )
     from .policy_module import (
         policy_module_start,
@@ -78,6 +80,7 @@ class CoLink:
         send_variable,
         recv_variable,
     )
+
     set_variable_with_remote_storage = send_variable_with_remote_storage
     get_variable_with_remote_storage = recv_variable_with_remote_storage
     set_variable = send_variable

@@ -18,8 +18,8 @@ from colink.colink_registry_pb2_grpc import *
 
 
 class JWT:
-    def __init__(self, role: str, user_id: str, exp: int):
-        self.role = role
+    def __init__(self, privilege: str, user_id: str, exp: int):
+        self.privilege = privilege
         self.user_id = user_id
         self.exp = exp
 
@@ -135,6 +135,31 @@ def import_user(
 
 def generate_token(self, privilege: str) -> str:
     return self.generate_token_with_expiration_time(get_time_stamp() + 86400, privilege)
+
+
+def generate_token_with_signature(
+    self,
+    public_key: secp256k1.PublicKey,
+    signature_timestamp: int,
+    expiration_timestamp: int,
+    signature: bytes,
+) -> str:
+    public_key_vec = public_key_to_vec(public_key)
+    client = self._grpc_connect(self.core_addr)
+    response = client.GenerateToken(
+        request=GenerateTokenRequest(
+            expiration_time=expiration_timestamp,
+            privilege="user",
+            user_consent=UserConsent(
+                public_key=public_key_vec,
+                signature_timestamp=signature_timestamp,
+                expiration_timestamp=expiration_timestamp,
+                signature=signature,
+            ),
+        ),
+        metadata=get_jwt_auth(self.jwt),
+    )
+    return response.jwt
 
 
 def generate_token_with_expiration_time(
@@ -392,6 +417,12 @@ def stop_protocol_operator(self, instance_id: str):
     client = self._grpc_connect(self.core_addr)
     request = ProtocolOperatorInstanceId(instance_id=instance_id)
     client.StopProtocolOperator(request=request, metadata=get_jwt_auth(self.jwt))
+
+
+def get_core_addr(self) -> str:
+    if self.core_addr is None:
+        raise Exception("core_addr not found")
+    return self.core_addr
 
 
 def generate_user() -> Tuple[
