@@ -7,6 +7,8 @@ import random
 import time
 import socket
 import atexit
+import requests
+import pika
 from colink import CoLink
 
 
@@ -41,6 +43,16 @@ class InstantServer:
         mq_api = os.environ.get(
             "COLINK_SERVER_MQ_API", "http://guest:guest@localhost:15672/api"
         )
+        response = requests.get(mq_api)
+        STATUS_OK = 200
+        assert response.status_code == STATUS_OK, "MQ_API connection failed"
+        parameters = pika.URLParameters(mq_amqp)
+        try:
+            connection = pika.BlockingConnection(parameters)
+            assert connection.is_open, "MQ_AMQP connection failed"
+            connection.close()
+        except Exception as error:
+            raise error
         self.process = subprocess.Popen(
             [
                 program,
