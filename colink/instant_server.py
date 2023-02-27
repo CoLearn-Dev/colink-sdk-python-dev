@@ -71,9 +71,7 @@ class InstantServer:
                 "--inter-core-reverse-mode",
             ],
             env={"COLINK_HOME": colink_home},
-            cwd=working_dir,
-            stdout=DEVNULL,
-            stderr=DEVNULL,
+            cwd=working_dir
         )
         while True:
             if (
