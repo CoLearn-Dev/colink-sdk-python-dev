@@ -128,14 +128,16 @@ class VtP2pCtx:
         public_addr: str = None,
         has_created_inbox: bool = False,
         inbox_server: VTInboxServer = None,
-        has_configured_inbox: Set[str] = set(),
-        remote_inboxs: Mapping[str, VTInbox] = {},
+        has_configured_inbox: Set[str] = None,
+        remote_inboxs: Mapping[str, VTInbox] = None,
     ):
         self.public_addr = public_addr
         self.has_created_inbox = has_created_inbox
         self.inbox_server = inbox_server
-        self.has_configured_inbox = has_configured_inbox
-        self.remote_inboxes = remote_inboxs
+        self.has_configured_inbox = (
+            has_configured_inbox if has_configured_inbox else set()
+        )
+        self.remote_inboxes = remote_inboxs if remote_inboxs else {}
 
 
 def _send_variable_p2p(cl, key: str, payload: bytes, receiver: CL.Participant):
