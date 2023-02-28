@@ -58,12 +58,12 @@ def send_variable(self, key: str, payload: Any, receivers: List[CL.Participant])
     threads = []
     for receiver in receivers:
         threads.append(
-            threading.Thread(target=thread_send_var, args=(self, key, payload, receiver))
+            threading.Thread(
+                target=thread_send_var, args=(self, key, payload, receiver)
+            )
         )
     for th in threads:
         th.start()
-    for th in threads:
-        th.join()
 
 
 def recv_variable(self, key: str, sender: CL.Participant) -> bytes:
