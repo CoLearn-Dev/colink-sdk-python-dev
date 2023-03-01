@@ -20,14 +20,13 @@ USER_NUM = [2, 2, 2, 2, 2, 3, 3, 4, 4, 5, 5]
 
 def run_greetings(port: int, user_num: int):
     try:
+        while socket.socket().connect_ex((CORE_ADDR, port)) == 0:
+            port = random.randint(port, port + 500)
         addr = "http://{}:{}".format(CORE_ADDR, port)
         child_processes = []
         thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=64)
         threads = []
-        if socket.socket().connect_ex((CORE_ADDR, port)) == 0:
-            raise AssertionError(
-                "listen {}:{}: address already in use.".format(CORE_ADDR, port)
-            )
+
         if os.path.exists("./colink-server/host_token.txt"):
             os.remove("./colink-server/host_token.txt")
         child_processes.append(start_core(port, []))
