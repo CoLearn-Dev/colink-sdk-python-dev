@@ -108,7 +108,7 @@ class VTInboxServer:
         )
         cert_file.close()
         priv_key_file.close()
-        self.server_thread = threading.Thread(target=httpd.serve_forever, args=())
+        self.server_thread = threading.Thread(target=httpd.serve_forever, args=(), daemon=True)
         httpd.thread = self.server_thread
         self.server_thread.start()
         self.port = port
