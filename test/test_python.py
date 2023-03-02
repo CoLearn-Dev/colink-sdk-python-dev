@@ -26,7 +26,6 @@ def run_greetings(port: int, user_num: int):
         child_processes = []
         thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=64)
         threads = []
-
         if os.path.exists("./colink-server/host_token.txt"):
             os.remove("./colink-server/host_token.txt")
         child_processes.append(start_core(port, []))
