@@ -6,6 +6,7 @@ import queue
 import time
 import random
 import threading
+from copy import deepcopy
 from threading import Thread
 from .application import *
 from .p2p_inbox import VtP2pCtx
@@ -75,9 +76,10 @@ class ProtocolOperator:
         q = queue.Queue()
         for protocol_and_role in self.mapping.keys():  # insert user func to map
             user_func = self.mapping[protocol_and_role]
+            _cl = deepcopy(cl)
             t = threading.Thread(
                 target=thread_func,
-                args=(q, protocol_and_role, cl, vt_public_addr, user_func),
+                args=(q, protocol_and_role, _cl, vt_public_addr, user_func),
                 daemon=True,
             )
             threads.append(t)
@@ -195,7 +197,7 @@ class CoLinkProtocol:
                     task = Task.FromString(task_entry.payload)
                     if task.status == "started":
                         # begin user func
-                        cl = self.cl
+                        cl = deepcopy(self.cl)
                         cl.set_task_id(task.task_id)
                         cl.vt_p2p_ctx = VtP2pCtx(self.vt_public_addr)
                         try:

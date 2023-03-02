@@ -2,6 +2,7 @@ import logging
 from typing import List, Any
 import colink as CL
 from threading import Thread
+import logging
 from .p2p_inbox import _recv_variable_p2p, _send_variable_p2p
 from .application import try_convert_to_bytes
 
