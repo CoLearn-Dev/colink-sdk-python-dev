@@ -24,10 +24,6 @@ def run_greetings(port: int, user_num: int):
         child_processes = []
         thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=64)
         threads = []
-        if socket.socket().connect_ex((CORE_ADDR, port)) == 0:
-            raise AssertionError(
-                "listen {}:{}: address already in use.".format(CORE_ADDR, port)
-            )
         if os.path.exists("./colink-server/host_token.txt"):
             os.remove("./colink-server/host_token.txt")
         child_processes.append(start_core(port, []))
@@ -189,7 +185,10 @@ def test_example_protocol_greetings():
         filename="test_example_protocol.log", filemode="a", level=logging.INFO
     )
     for i in range(0, 11):
-        run_greetings(12300 + i, USER_NUM[i])
+        port = random.randint(30000, 40000)
+        while socket.socket().connect_ex((CORE_ADDR, port)) == 0:
+            port = random.randint(30000, 40000)
+        run_greetings(port, USER_NUM[i])
 
 
 if __name__ == "__main__":

@@ -93,9 +93,9 @@ class VTInboxServer:
         cert_file.write(tls_cert_pem)
         cert_file.seek(0)
         # http server
-        port = random.randint(10000, 30000)
-        if socket.socket().connect_ex(("0.0.0.0", port)) == 0:
-            port = random.randint(10000, 30000)
+        port = random.randint(10000, 20000)
+        while socket.socket().connect_ex(("0.0.0.0", port)) == 0:
+            port = random.randint(10000, 20000)
         httpd = HTTPServer(("0.0.0.0", port), VTInBox_RequestHandler)
         httpd.data = dict()  # pass to http request handler
         httpd.notification_channels = dict()
@@ -108,7 +108,7 @@ class VTInboxServer:
         )
         cert_file.close()
         priv_key_file.close()
-        self.server_thread = threading.Thread(target=httpd.serve_forever, args=())
+        self.server_thread = threading.Thread(target=httpd.serve_forever, args=(), daemon=True)
         httpd.thread = self.server_thread
         self.server_thread.start()
         self.port = port
@@ -128,14 +128,16 @@ class VtP2pCtx:
         public_addr: str = None,
         has_created_inbox: bool = False,
         inbox_server: VTInboxServer = None,
-        has_configured_inbox: Set[str] = set(),
-        remote_inboxs: Mapping[str, VTInbox] = {},
+        has_configured_inbox: Set[str] = None,
+        remote_inboxs: Mapping[str, VTInbox] = None,
     ):
         self.public_addr = public_addr
         self.has_created_inbox = has_created_inbox
         self.inbox_server = inbox_server
-        self.has_configured_inbox = has_configured_inbox
-        self.remote_inboxes = remote_inboxs
+        self.has_configured_inbox = (
+            has_configured_inbox if has_configured_inbox else set()
+        )
+        self.remote_inboxes = remote_inboxs if remote_inboxs else {}
 
 
 def _send_variable_p2p(cl, key: str, payload: bytes, receiver: CL.Participant):
