@@ -48,7 +48,7 @@ def recv_variable_with_remote_storage(self, key: str, sender: CL.Participant) ->
 
 
 def send_variable(self, key: str, payload: Any, receivers: List[CL.Participant]):
-    def thr_send_var(cl, key: str, payload: bytes, receiver: CL.Participant):
+    def thd_send_var(cl, key: str, payload: bytes, receiver: CL.Participant):
         try:
             _send_variable_p2p(cl, key, payload, receiver)
         except Exception as e:
@@ -57,7 +57,7 @@ def send_variable(self, key: str, payload: Any, receivers: List[CL.Participant])
     payload = try_convert_to_bytes(payload)
     threads = []
     for receiver in receivers:
-        threads.append(Thread(target=thr_send_var, args=(self, key, payload, receiver)))
+        threads.append(Thread(target=thd_send_var, args=(self, key, payload, receiver)))
     for th in threads:
         th.start()
 
