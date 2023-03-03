@@ -93,9 +93,9 @@ class VTInboxServer:
         cert_file.write(tls_cert_pem)
         cert_file.seek(0)
         # http server
-        port = random.randint(10000, 30000)
-        if socket.socket().connect_ex(("0.0.0.0", port)) == 0:
-            port = random.randint(10000, 30000)
+        port = random.randint(10000, 20000)
+        while socket.socket().connect_ex(("0.0.0.0", port)) == 0:
+            port = random.randint(10000, 20000)
         httpd = HTTPServer(("0.0.0.0", port), VTInBox_RequestHandler)
         httpd.data = dict()  # pass to http request handler
         httpd.notification_channels = dict()

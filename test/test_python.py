@@ -185,9 +185,9 @@ def test_example_protocol_greetings():
         filename="test_example_protocol.log", filemode="a", level=logging.INFO
     )
     for i in range(0, 11):
-        port = 12300 + i
+        port = random.randint(30000, 40000)
         while socket.socket().connect_ex((CORE_ADDR, port)) == 0:
-            port = random.randint(port, port + 500)
+            port = random.randint(30000, 40000)
         run_greetings(port, USER_NUM[i])
 
 
