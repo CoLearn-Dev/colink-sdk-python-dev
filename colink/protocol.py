@@ -76,10 +76,9 @@ class ProtocolOperator:
         q = queue.Queue()
         for protocol_and_role in self.mapping.keys():  # insert user func to map
             user_func = self.mapping[protocol_and_role]
-            _cl = deepcopy(cl)
             t = threading.Thread(
                 target=thread_func,
-                args=(q, protocol_and_role, _cl, vt_public_addr, user_func),
+                args=(q, protocol_and_role, deepcopy(cl), vt_public_addr, user_func),
                 daemon=True,
             )
             threads.append(t)

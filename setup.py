@@ -61,7 +61,7 @@ setup(
         grpc_tools_version,
         "secp256k1==0.14.0",
         "pika==1.2.0",
-        "cryptography==38.0.3",
+        "cryptography==39.0.1",
         "pyjwt==2.6.0",
         "requests==2.28.1"
     ],  # external packages as dependencies
