@@ -27,7 +27,7 @@ class InstantServer:
                     **os.environ,
                     "COLINK_INSTALL_SERVER_ONLY": "true",
                     "COLINK_INSTALL_SILENT": "true",
-                    "COLINK_SERVER_VERSION": "v0.2.9",
+                    "COLINK_SERVER_VERSION": "v0.3.0",
                 },
             ).wait()
         self.id = str(uuid.uuid4())
@@ -37,39 +37,42 @@ class InstantServer:
 
         working_dir = os.path.join(colink_home, "instant_servers", self.id)
         os.makedirs(working_dir, exist_ok=True)
-        mq_amqp = os.environ.get(
-            "COLINK_SERVER_MQ_AMQP", "amqp://guest:guest@localhost:5672"
-        )
-        mq_api = os.environ.get(
-            "COLINK_SERVER_MQ_API", "http://guest:guest@localhost:15672/api"
-        )
-        response = requests.get(mq_api)
-        STATUS_OK = 200
-        assert response.status_code == STATUS_OK, "MQ_API connection failed"
-        parameters = pika.URLParameters(mq_amqp)
-        try:
-            connection = pika.BlockingConnection(parameters)
-            assert connection.is_open, "MQ_AMQP connection failed"
-            connection.close()
-        except Exception as error:
-            raise error
-        self.process = subprocess.Popen(
-            [
+        mq_uri = os.environ.get("COLINK_SERVER_MQ_URI", None)
+        mq_api = os.environ.get("COLINK_SERVER_MQ_API", None)
+
+        #try:
+        #    response = requests.get(mq_api)
+        #except Exception as error:
+        #    raise Exception("MQ_API connection failed")
+        #STATUS_OK = 200
+        #assert response.status_code == STATUS_OK, "MQ_API connection failed"
+        #parameters = pika.URLParameters(mq_uri)
+        #try:
+        #    connection = pika.BlockingConnection(parameters)
+        #    assert connection.is_open, "MQ_AMQP connection failed"
+        #    connection.close()
+        #except Exception as error:
+        #    raise error
+
+        
+        args=[
                 program,
                 "--address",
                 "0.0.0.0",
                 "--port",
                 str(self.port),
-                "--mq-amqp",
-                mq_amqp,
-                "--mq-api",
-                mq_api,
                 "--mq-prefix",
                 f"colink-instant-server-{self.port}",
                 "--core-uri",
                 f"http://127.0.0.1:{self.port}",
                 "--inter-core-reverse-mode",
-            ],
+            ]
+        if mq_uri is not None:
+            args=args+['--mq-uri',mq_uri]
+        if mq_api is not None:
+            args=args+['--mq-api',mq_api]
+        self.process = subprocess.Popen(
+            args,
             env={"COLINK_HOME": colink_home},
             cwd=working_dir,
         )
