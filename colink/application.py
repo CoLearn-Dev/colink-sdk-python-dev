@@ -56,35 +56,32 @@ class CoLinkSubscriber:
 
     def get_next(self) -> bytes:
         if self.mq_type == "rabbitmq":
-            print("go rabbit ",self.queue_name)
+            #print("go rabbit ",self.queue_name)
             for method, _, body in self.rabbitmq_channel.consume(
                 self.queue_name
             ):  # get the first package from queue then return
                 self.rabbitmq_channel.basic_ack(
                     method.delivery_tag
                 )  # ack this package before return
-                print("acked")
-                print(body)
+                #print("acked")
+                #print(body)
                 return body
         elif self.mq_type == "redis":
             # data=self.redis_connection.get_message()
-            print("go redis",self.queue_name)
+            #print("go redis",self.queue_name)
             consumer_name = str(uuid.uuid4())
             res = self.redis_connection.xreadgroup(
                 self.queue_name, consumer_name, {self.queue_name: ">"}, count=1, block=0
             )
-            print("readed")
+            #print("readed")
             key, ids = res[0]
             id, _map = ids[0]
             data = _map[b"payload"]
             id = byte_to_str(id)
             self.redis_connection.xack(self.queue_name, self.queue_name, id)
-            print("acked ")
+            #print("acked ")
             #self.redis_connection.xdel(self.queue_name, id)
-            #print("del", file=open("1.txt", "a"))
-            print(data)
-
-            # p.subscribe('foo')
+            #print(data)
             return data
         else:
             raise Exception("Unsupported MQ type")
