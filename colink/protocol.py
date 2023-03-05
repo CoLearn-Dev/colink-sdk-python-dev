@@ -137,7 +137,6 @@ class CoLinkProtocol:
         self.user_func = user_func
 
     def start(self):
-        print('deq ',self.protocol_and_role,file=open('1.txt','a'))
         operator_mq_key = "_internal:protocols:{}:operator_mq".format(
             self.protocol_and_role
         )
@@ -180,7 +179,6 @@ class CoLinkProtocol:
         self.cl.unlock(lock)
         subscriber = self.cl.new_subscriber(queue_name)
         while True:
-            print('get next! ',self.protocol_and_role,file=open('1.txt','a'))
             data = subscriber.get_next()
             message = SubscriptionMessage.FromString(data)
             if message.change_type != "delete":
@@ -201,7 +199,6 @@ class CoLinkProtocol:
                         cl.set_task_id(task.task_id)
                         cl.vt_p2p_ctx = VtP2pCtx(self.vt_public_addr)
                         try:
-                            print('run ',self.user_func,file=open('1.txt','a'))
                             self.user_func(cl, task.protocol_param, task.participants)
                         except Exception as e:
                             logging.info(

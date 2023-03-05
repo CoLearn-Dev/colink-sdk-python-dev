@@ -56,33 +56,33 @@ class CoLinkSubscriber:
 
     def get_next(self) -> bytes:
         if self.mq_type == "rabbitmq":
-            print("go rabbit ",self.queue_name, file=open("1.txt", "a"))
+            print("go rabbit ",self.queue_name)
             for method, _, body in self.rabbitmq_channel.consume(
                 self.queue_name
             ):  # get the first package from queue then return
                 self.rabbitmq_channel.basic_ack(
                     method.delivery_tag
                 )  # ack this package before return
-                print("acked", file=open("1.txt", "a"))
-                print(body, file=open("1.txt", "a"))
+                print("acked")
+                print(body)
                 return body
         elif self.mq_type == "redis":
             # data=self.redis_connection.get_message()
-            print("go redis",self.queue_name, file=open("1.txt", "a"))
+            print("go redis",self.queue_name)
             consumer_name = str(uuid.uuid4())
             res = self.redis_connection.xreadgroup(
                 self.queue_name, consumer_name, {self.queue_name: ">"}, count=1, block=0
             )
-            print("readed", file=open("1.txt", "a"))
+            print("readed")
             key, ids = res[0]
             id, _map = ids[0]
             data = _map[b"payload"]
             id = byte_to_str(id)
             self.redis_connection.xack(self.queue_name, self.queue_name, id)
-            print("acked ", id, file=open("1.txt", "a"))
-            self.redis_connection.xdel(self.queue_name, id)
-            print("del", file=open("1.txt", "a"))
-            print(data, file=open("1.txt", "a"))
+            print("acked ")
+            #self.redis_connection.xdel(self.queue_name, id)
+            #print("del", file=open("1.txt", "a"))
+            print(data)
 
             # p.subscribe('foo')
             return data
