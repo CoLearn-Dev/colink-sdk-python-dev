@@ -27,7 +27,7 @@ class InstantServer:
                     **os.environ,
                     "COLINK_INSTALL_SERVER_ONLY": "true",
                     "COLINK_INSTALL_SILENT": "true",
-                    "COLINK_SERVER_VERSION": "v0.3.0",
+                    "COLINK_SERVER_VERSION": "v0.3.3",
                 },
             ).wait()
         self.id = str(uuid.uuid4())
