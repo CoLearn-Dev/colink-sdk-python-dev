@@ -14,9 +14,9 @@ from .p2p_inbox import VtP2pCtx
 from .colink import CoLink
 
 
-def thread_func(q, protocol_and_role, cl, vt_public_addr, user_func):
+def thread_func(q, protocol_and_role, cl, vt_public_addr, attached, user_func):
     try:
-        cl_app = CoLinkProtocol(protocol_and_role, cl, vt_public_addr, user_func)
+        cl_app = CoLinkProtocol(protocol_and_role, cl, vt_public_addr, attached, user_func)
         cl_app.start()
     except Exception as e:
         q.put(e)
@@ -38,6 +38,7 @@ class ProtocolOperator:
         cl: CoLink = None,
         keep_alive_when_disconnect: bool = False,
         vt_public_addr: str = None,
+        attached: bool = False
     ):
         if cl is None:
             cl, keep_alive_when_disconnect, vt_public_addr = _cl_parse_args()
@@ -79,7 +80,7 @@ class ProtocolOperator:
             user_func = self.mapping[protocol_and_role]
             t = threading.Thread(
                 target=thread_func,
-                args=(q, protocol_and_role, deepcopy(cl), vt_public_addr, user_func),
+                args=(q, protocol_and_role, deepcopy(cl), vt_public_addr, attached, user_func),
                 daemon=True,
             )
             threads.append(t)
@@ -119,7 +120,7 @@ class ProtocolOperator:
                 time.sleep(0.01)
 
     def run_attach(self, cl: CoLink):
-        thread = Thread(target=self.run, args=(cl, False, "127.0.0.1"), daemon=True)
+        thread = Thread(target=self.run, args=(cl, False, "127.0.0.1", True), daemon=True)
         thread.start()
 
 
@@ -129,12 +130,14 @@ class CoLinkProtocol:
         protocol_and_role: str,
         cl: CoLink,
         vt_public_addr: str,
+        attached: bool,
         user_func,
     ):
         self.protocol_and_role = protocol_and_role
         self.cl = cl
         self.vt_public_addr = vt_public_addr
         self.user_func = user_func
+        self.attached = attached
 
     def start(self):
         operator_mq_key = "_internal:protocols:{}:operator_mq".format(
@@ -179,7 +182,15 @@ class CoLinkProtocol:
         self.cl.unlock(lock)
         subscriber = self.cl.new_subscriber(queue_name)
         while True:
-            data = subscriber.get_next()
+            try:
+                data = subscriber.get_next()
+            except redis.exceptions.ConnectionError as e:
+                if self.attached:
+                    return
+                else:
+                    raise e
+            except Exception as e:
+                raise e
             message = SubscriptionMessage.FromString(data)
             if message.change_type != "delete":
                 task_id = Task.FromString(message.payload)
