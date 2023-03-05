@@ -46,7 +46,6 @@ class CoLinkSubscriber:
             self.mq_type = "redis"
             self.rabbitmq_channel = None
             self.redis_connection = r
-            # self.redis_connection.subscribe(queue_name)
         else:
             param = pika.connection.URLParameters(url=mq_uri)
             mq = pika.BlockingConnection(param)  # establish rabbitmq connection
@@ -56,32 +55,24 @@ class CoLinkSubscriber:
 
     def get_next(self) -> bytes:
         if self.mq_type == "rabbitmq":
-            #print("go rabbit ",self.queue_name)
             for method, _, body in self.rabbitmq_channel.consume(
                 self.queue_name
             ):  # get the first package from queue then return
                 self.rabbitmq_channel.basic_ack(
                     method.delivery_tag
                 )  # ack this package before return
-                #print("acked")
-                #print(body)
                 return body
         elif self.mq_type == "redis":
-            # data=self.redis_connection.get_message()
-            #print("go redis",self.queue_name)
             consumer_name = str(uuid.uuid4())
             res = self.redis_connection.xreadgroup(
                 self.queue_name, consumer_name, {self.queue_name: ">"}, count=1, block=0
             )
-            #print("readed")
             key, ids = res[0]
             id, _map = ids[0]
             data = _map[b"payload"]
             id = byte_to_str(id)
             self.redis_connection.xack(self.queue_name, self.queue_name, id)
-            #print("acked ")
-            #self.redis_connection.xdel(self.queue_name, id)
-            #print(data)
+            self.redis_connection.xdel(self.queue_name, id)
             return data
         else:
             raise Exception("Unsupported MQ type")

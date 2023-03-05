@@ -9,6 +9,7 @@ import socket
 import atexit
 import requests
 import pika
+import redis
 from colink import CoLink
 
 
@@ -34,43 +35,51 @@ class InstantServer:
         self.port = random.randint(10000, 20000)
         while socket.socket().connect_ex(("127.0.0.1", self.port)) == 0:
             self.port = random.randint(10000, 20000)
-
         working_dir = os.path.join(colink_home, "instant_servers", self.id)
         os.makedirs(working_dir, exist_ok=True)
         mq_uri = os.environ.get("COLINK_SERVER_MQ_URI", None)
         mq_api = os.environ.get("COLINK_SERVER_MQ_API", None)
-
-        #try:
-        #    response = requests.get(mq_api)
-        #except Exception as error:
-        #    raise Exception("MQ_API connection failed")
-        #STATUS_OK = 200
-        #assert response.status_code == STATUS_OK, "MQ_API connection failed"
-        #parameters = pika.URLParameters(mq_uri)
-        #try:
-        #    connection = pika.BlockingConnection(parameters)
-        #    assert connection.is_open, "MQ_AMQP connection failed"
-        #    connection.close()
-        #except Exception as error:
-        #    raise error
-
-        
-        args=[
-                program,
-                "--address",
-                "0.0.0.0",
-                "--port",
-                str(self.port),
-                "--mq-prefix",
-                f"colink-instant-server-{self.port}",
-                "--core-uri",
-                f"http://127.0.0.1:{self.port}",
-                "--inter-core-reverse-mode",
-            ]
         if mq_uri is not None:
-            args=args+['--mq-uri',mq_uri]
+            if mq_uri.startswith("amqp"):
+                parameters = pika.URLParameters(mq_uri)
+                try:
+                    connection = pika.BlockingConnection(parameters)
+                    assert connection.is_open, "MQ_AMQP connection failed"
+                    connection.close()
+                except Exception as error:
+                    raise error
+                if mq_api is not None:
+                    try:
+                        response = requests.get(mq_api)
+                    except Exception as error:
+                        raise Exception("MQ_API connection failed")
+                    STATUS_OK = 200
+                    assert response.status_code == STATUS_OK, "MQ_API connection failed"
+            elif mq_uri.startswith("redis"):
+                try:
+                    r = redis.from_url(mq_uri)
+                    r.ping()
+                except redis.exceptions.ConnectionError as e:
+                    raise e
+            else:
+                raise Exception(f"mq_uri({mq_uri}) is not supported.")
+
+        args = [
+            program,
+            "--address",
+            "0.0.0.0",
+            "--port",
+            str(self.port),
+            "--mq-prefix",
+            f"colink-instant-server-{self.port}",
+            "--core-uri",
+            f"http://127.0.0.1:{self.port}",
+            "--inter-core-reverse-mode",
+        ]
+        if mq_uri is not None:
+            args = args + ["--mq-uri", mq_uri]
         if mq_api is not None:
-            args=args+['--mq-api',mq_api]
+            args = args + ["--mq-api", mq_api]
         self.process = subprocess.Popen(
             args,
             env={"COLINK_HOME": colink_home},
