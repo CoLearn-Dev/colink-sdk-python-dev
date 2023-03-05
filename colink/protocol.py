@@ -16,7 +16,9 @@ from .colink import CoLink
 
 def thread_func(q, protocol_and_role, cl, vt_public_addr, attached, user_func):
     try:
-        cl_app = CoLinkProtocol(protocol_and_role, cl, vt_public_addr, attached, user_func)
+        cl_app = CoLinkProtocol(
+            protocol_and_role, cl, vt_public_addr, attached, user_func
+        )
         cl_app.start()
     except Exception as e:
         q.put(e)
@@ -38,7 +40,7 @@ class ProtocolOperator:
         cl: CoLink = None,
         keep_alive_when_disconnect: bool = False,
         vt_public_addr: str = None,
-        attached: bool = False
+        attached: bool = False,
     ):
         if cl is None:
             cl, keep_alive_when_disconnect, vt_public_addr = _cl_parse_args()
@@ -80,7 +82,14 @@ class ProtocolOperator:
             user_func = self.mapping[protocol_and_role]
             t = threading.Thread(
                 target=thread_func,
-                args=(q, protocol_and_role, deepcopy(cl), vt_public_addr, attached, user_func),
+                args=(
+                    q,
+                    protocol_and_role,
+                    deepcopy(cl),
+                    vt_public_addr,
+                    attached,
+                    user_func,
+                ),
                 daemon=True,
             )
             threads.append(t)
@@ -120,7 +129,9 @@ class ProtocolOperator:
                 time.sleep(0.01)
 
     def run_attach(self, cl: CoLink):
-        thread = Thread(target=self.run, args=(cl, False, "127.0.0.1", True), daemon=True)
+        thread = Thread(
+            target=self.run, args=(cl, False, "127.0.0.1", True), daemon=True
+        )
         thread.start()
 
 
