@@ -14,11 +14,9 @@ from .p2p_inbox import VtP2pCtx
 from .colink import CoLink
 
 
-def thread_func(q, protocol_and_role, cl, vt_public_addr, attached, user_func):
+def thread_func(q, protocol_and_role, cl, vt_public_addr, user_func):
     try:
-        cl_app = CoLinkProtocol(
-            protocol_and_role, cl, vt_public_addr, attached, user_func
-        )
+        cl_app = CoLinkProtocol(protocol_and_role, cl, vt_public_addr, user_func)
         cl_app.start()
     except Exception as e:
         q.put(e)
@@ -87,7 +85,6 @@ class ProtocolOperator:
                     protocol_and_role,
                     deepcopy(cl),
                     vt_public_addr,
-                    attached,
                     user_func,
                 ),
                 daemon=True,
@@ -102,7 +99,11 @@ class ProtocolOperator:
                         break
                 else:
                     err = q.get()
-                    raise err
+                    # in instance server and run_attach mode+standalone MQ, server closing MQ when shutdown may trigger this exception
+                    if attached and isinstance(err, redis.exceptions.ConnectionError):
+                        break
+                    else:
+                        raise err
                 time.sleep(0.01)
         else:
             counter = 0
@@ -113,7 +114,11 @@ class ProtocolOperator:
                         break
                 else:
                     err = q.get()
-                    raise err
+                    # in instance server and run_attach mode+standalone MQ, server closing MQ when shutdown may trigger this exception
+                    if attached and isinstance(err, redis.exceptions.ConnectionError):
+                        break
+                    else:
+                        raise err
                 # both catch thread error & detect server connection
                 if time.time() > timer:
                     timer = time.time() + random.randint(32, 64)  # update timer
@@ -141,14 +146,12 @@ class CoLinkProtocol:
         protocol_and_role: str,
         cl: CoLink,
         vt_public_addr: str,
-        attached: bool,
         user_func,
     ):
         self.protocol_and_role = protocol_and_role
         self.cl = cl
         self.vt_public_addr = vt_public_addr
         self.user_func = user_func
-        self.attached = attached
 
     def start(self):
         operator_mq_key = "_internal:protocols:{}:operator_mq".format(
@@ -193,15 +196,7 @@ class CoLinkProtocol:
         self.cl.unlock(lock)
         subscriber = self.cl.new_subscriber(queue_name)
         while True:
-            try:
-                data = subscriber.get_next()
-            except redis.exceptions.ConnectionError as e:
-                if self.attached:
-                    return
-                else:
-                    raise e
-            except Exception as e:
-                raise e
+            data = subscriber.get_next()
             message = SubscriptionMessage.FromString(data)
             if message.change_type != "delete":
                 task_id = Task.FromString(message.payload)
@@ -265,7 +260,7 @@ def _cl_parse_args() -> Tuple[CoLink, bool, str]:
     try:
         cl.request_info()
     except Exception as e:
-        raise Exception("No CoLink Server found")
+        raise Exception("No CoLink server found")
     if ca is not None:
         cl.ca_certificate(ca)
     if cert is not None and key is not None:

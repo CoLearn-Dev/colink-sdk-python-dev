@@ -37,45 +37,48 @@ class CoLinkInfo:
         self.version = version
 
 
-class CoLinkSubscriber:
-    def __init__(self, mq_uri: str, queue_name: str):
-        uri_parsed = urlparse(mq_uri)
+class CoLinkRedisSubscriber:
+    def __init__(self, queue_name, mq_uri):
         self.queue_name = queue_name
-        if uri_parsed.scheme.startswith("redis"):
-            r = redis.from_url(mq_uri)
-            self.mq_type = "redis"
-            self.rabbitmq_channel = None
-            self.redis_connection = r
-        else:
-            param = pika.connection.URLParameters(url=mq_uri)
-            mq = pika.BlockingConnection(param)  # establish rabbitmq connection
-            self.mq_type = "rabbitmq"
-            self.rabbitmq_channel = mq.channel()
-            self.redis_connection = None
+        self.redis_connection = redis.from_url(mq_uri)
 
-    def get_next(self) -> bytes:
-        if self.mq_type == "rabbitmq":
-            for method, _, body in self.rabbitmq_channel.consume(
-                self.queue_name
-            ):  # get the first package from queue then return
-                self.rabbitmq_channel.basic_ack(
-                    method.delivery_tag
-                )  # ack this package before return
-                return body
-        elif self.mq_type == "redis":
-            consumer_name = str(uuid.uuid4())
-            res = self.redis_connection.xreadgroup(
-                self.queue_name, consumer_name, {self.queue_name: ">"}, count=1, block=0
-            )
-            key, ids = res[0]
-            id, _map = ids[0]
-            data = _map[b"payload"]
-            id = byte_to_str(id)
-            self.redis_connection.xack(self.queue_name, self.queue_name, id)
-            self.redis_connection.xdel(self.queue_name, id)
-            return data
-        else:
-            raise Exception("Unsupported MQ type")
+    def get_next(self):
+        consumer_name = str(uuid.uuid4())
+        res = self.redis_connection.xreadgroup(
+            self.queue_name, consumer_name, {self.queue_name: ">"}, count=1, block=0
+        )
+        key, ids = res[0]
+        _id, _map = ids[0]
+        data = _map[b"payload"]
+        _id = byte_to_str(_id)
+        self.redis_connection.xack(self.queue_name, self.queue_name, _id)
+        self.redis_connection.xdel(self.queue_name, _id)
+        return data
+
+
+class CoLinkRabbitMQSubscriber:
+    def __init__(self, queue_name, mq_uri):
+        self.queue_name = queue_name
+        param = pika.connection.URLParameters(url=mq_uri)
+        mq = pika.BlockingConnection(param)  # establish rabbitmq connection
+        self.rabbitmq_channel = mq.channel()
+
+    def get_next(self):
+        for method, _, body in self.rabbitmq_channel.consume(
+            self.queue_name
+        ):  # get the first package from queue then return
+            self.rabbitmq_channel.basic_ack(
+                method.delivery_tag
+            )  # ack this package before return
+            return body
+
+
+def CoLinkSubscriber(mq_uri: str, queue_name: str):
+    uri_parsed = urlparse(mq_uri)
+    if uri_parsed.scheme.startswith("redis"):
+        return CoLinkRedisSubscriber(queue_name, mq_uri)
+    else:
+        return CoLinkRabbitMQSubscriber(queue_name, mq_uri)
 
 
 def request_info(self) -> CoLinkInfo:
@@ -357,7 +360,9 @@ def unsubscribe(self, queue_name: str):
     )
 
 
-def new_subscriber(self, queue_name: str) -> CoLinkSubscriber:
+def new_subscriber(
+    self, queue_name: str
+) -> Union[CoLinkRedisSubscriber, CoLinkRabbitMQSubscriber]:
     mq_uri = self.request_info().mq_uri
     subscriber = CoLinkSubscriber(mq_uri, queue_name)
     return subscriber
