@@ -7,6 +7,9 @@ import pika
 import grpc
 import secp256k1
 import copy
+import redis
+from urllib.parse import urlparse
+import uuid
 from colink.colink_pb2 import *
 from colink.colink_pb2_grpc import CoLinkStub, CoLinkServicer
 from colink.colink_remote_storage_pb2 import *
@@ -34,22 +37,48 @@ class CoLinkInfo:
         self.version = version
 
 
-class CoLinkSubscriber:
-    def __init__(self, mq_uri: str, queue_name: str):
-        self.uri = mq_uri
+class CoLinkRedisSubscriber:
+    def __init__(self, mq_uri, queue_name):
         self.queue_name = queue_name
-        param = pika.connection.URLParameters(url=self.uri)
-        mq = pika.BlockingConnection(param)  # establish rabbitmq connection
-        self.channel = mq.channel()
+        self.redis_connection = redis.from_url(mq_uri)
 
-    def get_next(self) -> bytes:
-        for method, _, body in self.channel.consume(
+    def get_next(self):
+        consumer_name = str(uuid.uuid4())
+        res = self.redis_connection.xreadgroup(
+            self.queue_name, consumer_name, {self.queue_name: ">"}, count=1, block=0
+        )
+        key, ids = res[0]
+        _id, _map = ids[0]
+        data = _map[b"payload"]
+        _id = byte_to_str(_id)
+        self.redis_connection.xack(self.queue_name, self.queue_name, _id)
+        self.redis_connection.xdel(self.queue_name, _id)
+        return data
+
+
+class CoLinkRabbitMQSubscriber:
+    def __init__(self, mq_uri, queue_name):
+        self.queue_name = queue_name
+        param = pika.connection.URLParameters(url=mq_uri)
+        mq = pika.BlockingConnection(param)  # establish rabbitmq connection
+        self.rabbitmq_channel = mq.channel()
+
+    def get_next(self):
+        for method, _, body in self.rabbitmq_channel.consume(
             self.queue_name
         ):  # get the first package from queue then return
-            self.channel.basic_ack(
+            self.rabbitmq_channel.basic_ack(
                 method.delivery_tag
             )  # ack this package before return
             return body
+
+
+def CoLinkSubscriber(mq_uri: str, queue_name: str):
+    uri_parsed = urlparse(mq_uri)
+    if uri_parsed.scheme.startswith("redis"):
+        return CoLinkRedisSubscriber(mq_uri, queue_name)
+    else:
+        return CoLinkRabbitMQSubscriber(mq_uri, queue_name)
 
 
 def request_info(self) -> CoLinkInfo:
@@ -331,7 +360,9 @@ def unsubscribe(self, queue_name: str):
     )
 
 
-def new_subscriber(self, queue_name: str) -> CoLinkSubscriber:
+def new_subscriber(
+    self, queue_name: str
+) -> Union[CoLinkRedisSubscriber, CoLinkRabbitMQSubscriber]:
     mq_uri = self.request_info().mq_uri
     subscriber = CoLinkSubscriber(mq_uri, queue_name)
     return subscriber

@@ -6,6 +6,7 @@ import queue
 import time
 import random
 import threading
+import redis
 from copy import deepcopy
 from threading import Thread
 from .application import *
@@ -37,6 +38,7 @@ class ProtocolOperator:
         cl: CoLink = None,
         keep_alive_when_disconnect: bool = False,
         vt_public_addr: str = None,
+        attached: bool = False,
     ):
         if cl is None:
             cl, keep_alive_when_disconnect, vt_public_addr = _cl_parse_args()
@@ -78,7 +80,13 @@ class ProtocolOperator:
             user_func = self.mapping[protocol_and_role]
             t = threading.Thread(
                 target=thread_func,
-                args=(q, protocol_and_role, deepcopy(cl), vt_public_addr, user_func),
+                args=(
+                    q,
+                    protocol_and_role,
+                    deepcopy(cl),
+                    vt_public_addr,
+                    user_func,
+                ),
                 daemon=True,
             )
             threads.append(t)
@@ -102,7 +110,11 @@ class ProtocolOperator:
                         break
                 else:
                     err = q.get()
-                    raise err
+                    # in instance server and run_attach mode+standalone MQ, server closing MQ when shutdown may trigger this exception
+                    if attached and isinstance(err, redis.exceptions.ConnectionError):
+                        break
+                    else:
+                        raise err
                 # both catch thread error & detect server connection
                 if time.time() > timer:
                     timer = time.time() + random.randint(32, 64)  # update timer
@@ -118,7 +130,9 @@ class ProtocolOperator:
                 time.sleep(0.01)
 
     def run_attach(self, cl: CoLink):
-        thread = Thread(target=self.run, args=(cl, False, "127.0.0.1"), daemon=True)
+        thread = Thread(
+            target=self.run, args=(cl, False, "127.0.0.1", True), daemon=True
+        )
         thread.start()
 
 
@@ -139,6 +153,7 @@ class CoLinkProtocol:
         operator_mq_key = "_internal:protocols:{}:operator_mq".format(
             self.protocol_and_role
         )
+        lock = self.cl.lock(operator_mq_key)
         res = self.cl.read_entries(
             [
                 StorageEntry(
@@ -174,13 +189,10 @@ class CoLinkProtocol:
                         )
             queue_name = self.cl.subscribe(latest_key, start_timestamp)
             self.cl.create_entry(operator_mq_key, queue_name)
-        mq_addr = self.cl.request_info().mq_uri
-        param = pika.connection.URLParameters(url=mq_addr)
-        mq = pika.BlockingConnection(param)  # establish rabbitmq connection
-        channel = mq.channel()
-        for method, _, body in channel.consume(queue_name):
-            channel.basic_ack(method.delivery_tag)
-            data = body
+        self.cl.unlock(lock)
+        subscriber = self.cl.new_subscriber(queue_name)
+        while True:
+            data = subscriber.get_next()
             message = SubscriptionMessage.FromString(data)
             if message.change_type != "delete":
                 task_id = Task.FromString(message.payload)
@@ -241,6 +253,10 @@ def _cl_parse_args() -> Tuple[CoLink, bool, str]:
         else os.environ.get("COLINK_VT_PUBLIC_ADDR", None)
     )
     cl = CoLink(addr, jwt)
+    try:
+        cl.request_info()
+    except Exception as e:
+        raise Exception("No CoLink server found")
     if ca is not None:
         cl.ca_certificate(ca)
     if cert is not None and key is not None:

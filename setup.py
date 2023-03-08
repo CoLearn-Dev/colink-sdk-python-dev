@@ -50,7 +50,7 @@ desc_file.close()
 
 setup(
     name="colink",
-    version="0.2.6",
+    version="0.3.0",
     description="colink python module",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -63,6 +63,7 @@ setup(
         "pika==1.2.0",
         "cryptography==39.0.1",
         "pyjwt==2.6.0",
-        "requests==2.28.1"
+        "requests==2.28.1",
+        "redis==4.5.1"
     ],  # external packages as dependencies
 )

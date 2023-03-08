@@ -12,8 +12,6 @@ from colink import byte_to_str
 
 CORE_ADDR = "127.0.0.1"
 CORE_DOMAIN_NAME = "localhost"
-MQ_AMQP = "amqp://guest:guest@localhost:5672"
-MQ_API = "http://guest:guest@localhost:15672/api"
 MQ_PREFIX = "colink-test-python"
 USER_NUM = [2, 2, 2, 2, 2, 3, 3, 4, 4, 5, 5]
 
@@ -88,15 +86,11 @@ def start_core(port, param=[]):
             CORE_ADDR,
             "--port",
             str(port),
-            "--mq-amqp",
-            MQ_AMQP,
-            "--mq-api",
-            MQ_API,
             "--mq-prefix",
             MQ_PREFIX,
             *param,
         ],
-        env={"COLINK_HOME": os.path.join(os.getcwd(), "colink-server")},
+        env={**os.environ, "COLINK_HOME": os.path.join(os.getcwd(), "colink-server")},
         cwd="./colink-server",
         stdout=DEVNULL,
         stderr=DEVNULL,
@@ -185,9 +179,9 @@ def test_example_protocol_greetings():
         filename="test_example_protocol.log", filemode="a", level=logging.INFO
     )
     for i in range(0, 11):
-        port = random.randint(30000, 40000)
+        port = random.randint(10000, 20000)
         while socket.socket().connect_ex((CORE_ADDR, port)) == 0:
-            port = random.randint(30000, 40000)
+            port = random.randint(10000, 20000)
         run_greetings(port, USER_NUM[i])
 
 
