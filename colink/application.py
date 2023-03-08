@@ -38,7 +38,7 @@ class CoLinkInfo:
 
 
 class CoLinkRedisSubscriber:
-    def __init__(self, queue_name, mq_uri):
+    def __init__(self, mq_uri, queue_name):
         self.queue_name = queue_name
         self.redis_connection = redis.from_url(mq_uri)
 
@@ -57,7 +57,7 @@ class CoLinkRedisSubscriber:
 
 
 class CoLinkRabbitMQSubscriber:
-    def __init__(self, queue_name, mq_uri):
+    def __init__(self, mq_uri, queue_name):
         self.queue_name = queue_name
         param = pika.connection.URLParameters(url=mq_uri)
         mq = pika.BlockingConnection(param)  # establish rabbitmq connection
@@ -76,9 +76,9 @@ class CoLinkRabbitMQSubscriber:
 def CoLinkSubscriber(mq_uri: str, queue_name: str):
     uri_parsed = urlparse(mq_uri)
     if uri_parsed.scheme.startswith("redis"):
-        return CoLinkRedisSubscriber(queue_name, mq_uri)
+        return CoLinkRedisSubscriber(mq_uri, queue_name)
     else:
-        return CoLinkRabbitMQSubscriber(queue_name, mq_uri)
+        return CoLinkRabbitMQSubscriber(mq_uri, queue_name)
 
 
 def request_info(self) -> CoLinkInfo:
