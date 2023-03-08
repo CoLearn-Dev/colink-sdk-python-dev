@@ -99,11 +99,7 @@ class ProtocolOperator:
                         break
                 else:
                     err = q.get()
-                    # in instance server and run_attach mode+standalone MQ, server closing MQ when shutdown may trigger this exception
-                    if attached and isinstance(err, redis.exceptions.ConnectionError):
-                        break
-                    else:
-                        raise err
+                    raise err
                 time.sleep(0.01)
         else:
             counter = 0
