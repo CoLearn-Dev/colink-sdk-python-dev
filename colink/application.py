@@ -137,7 +137,7 @@ def get_task_id(self) -> str:
 
 def import_user(
     self,
-    public_key_vec: bytes,
+    public_key: coincurve.PublicKey,
     signature_timestamp: int,
     expiration_timestamp: int,
     signature: bytes,
@@ -146,7 +146,7 @@ def import_user(
     try:
         response = client.ImportUser(
             request=UserConsent(
-                public_key=public_key_vec,
+                public_key=public_key.format(),
                 signature_timestamp=signature_timestamp,
                 expiration_timestamp=expiration_timestamp,
                 signature=signature,
