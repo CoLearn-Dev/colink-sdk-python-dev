@@ -10,9 +10,7 @@ import copy
 import redis
 from urllib.parse import urlparse
 import uuid
-from cryptography.hazmat.primitives.asymmetric import ec
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives import hashes
+import ecdsa
 from colink.colink_pb2 import *
 from colink.colink_pb2_grpc import CoLinkStub, CoLinkServicer
 from colink.colink_remote_storage_pb2 import *
@@ -462,8 +460,8 @@ def get_core_addr(self) -> str:
 def generate_user() -> Tuple[
     secp256k1.PublicKey, secp256k1.PrivateKey
 ]:  # generate key pair(pub key+secret key) by SECP256K1 algorithm
-    private_key = secp256k1.PrivateKey()
-    public_key = private_key.pubkey
+    private_key = ecdsa.SigningKey.generate(curve=ecdsa.SECP256k1)
+    public_key = private_key.get_verifying_key()
     return public_key, private_key
 
 
@@ -481,10 +479,7 @@ def prepare_import_user_signature(
         + expiration_timestamp.to_bytes(8, byteorder="little")
         + core_pub_key
     )  # connect them all
-    ecdsax = user_sec_key.ecdsa_sign(msg)  # sign and get signature
-    signature = user_sec_key.ecdsa_serialize_compact(
-        ecdsax
-    )  # serialize the signature to given format align rust
+    signature = user_sec_key.sign(msg)  # sign and get signature
     return signature_timestamp, signature
 
 
@@ -511,7 +506,7 @@ def decode_jwt_without_validation(
 
 
 def public_key_to_vec(key: secp256k1.PublicKey) -> str:
-    return key.serialize()
+    return key.to_string("compressed")
 
 
 def get_time_stamp():
