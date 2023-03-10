@@ -168,19 +168,18 @@ def generate_token(self, privilege: str) -> str:
 
 def generate_token_with_signature(
     self,
-    public_key,#: secp256k1.PublicKey,
+    public_key: coincurve.PublicKey,
     signature_timestamp: int,
     expiration_timestamp: int,
     signature: bytes,
 ) -> str:
-    public_key_vec = public_key_to_vec(public_key)
     client = self._grpc_connect(self.core_addr)
     response = client.GenerateToken(
         request=GenerateTokenRequest(
             expiration_time=expiration_timestamp,
             privilege="user",
             user_consent=UserConsent(
-                public_key=public_key_vec,
+                public_key=public_key.format(),
                 signature_timestamp=signature_timestamp,
                 expiration_timestamp=expiration_timestamp,
                 signature=signature,
@@ -456,33 +455,30 @@ def get_core_addr(self) -> str:
     return self.core_addr
 
 
-def generate_user() :#-> Tuple[secp256k1.PublicKey, secp256k1.PrivateKey]:  # generate key pair(pub key+secret key) by SECP256K1 algorithm
-    #private_key = ecdsa.SigningKey.generate(curve=ecdsa.SECP256k1)
-    #public_key = private_key.get_verifying_key()
-    sk=coincurve.PrivateKey()
-    pk=sk.public_key
+def generate_user() -> Tuple[
+    coincurve.PublicKey, coincurve.PrivateKey
+]:  # generate key pair(pub key+secret key) by SECP256K1 algorithm
+    sk = coincurve.PrivateKey()
+    pk = sk.public_key
     return pk, sk
 
 
-
-
 def prepare_import_user_signature(
-    user_pub_key,#: secp256k1.PublicKey,
-    user_sec_key,#: secp256k1.PrivateKey,
-    # directly use string because hard to construct string back to secp256k1.PublicKey
-    core_pub_key: str,
+    user_pub_key: coincurve.PublicKey,
+    user_sec_key: coincurve.PrivateKey,
+    core_pub_key: bytes,
     expiration_timestamp: int,
 ) -> Tuple[int, str]:
     signature_timestamp = get_time_stamp()
     msg = (
-        public_key_to_vec(user_pub_key)
+        user_pub_key.format()
         + signature_timestamp.to_bytes(8, byteorder="little")
         + expiration_timestamp.to_bytes(8, byteorder="little")
         + core_pub_key
     )  # connect them all
     sig = user_sec_key.sign(msg)
-    r,s=decode_dss_signature(sig)
-    signature=int.to_bytes(r,32,'big')+int.to_bytes(s,32,'big')
+    r, s = decode_dss_signature(sig)
+    signature = int.to_bytes(r, 32, "big") + int.to_bytes(s, 32, "big")
     return signature_timestamp, signature
 
 
@@ -508,7 +504,7 @@ def decode_jwt_without_validation(
             return jwt
 
 
-def public_key_to_vec(key):#: secp256k1.PublicKey) -> str:
+def public_key_to_vec(key):  #: secp256k1.PublicKey) -> str:
     return key.format()
 
 
