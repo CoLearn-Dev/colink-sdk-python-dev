@@ -504,10 +504,6 @@ def decode_jwt_without_validation(
             return jwt
 
 
-def public_key_to_vec(key):  #: secp256k1.PublicKey) -> str:
-    return key.format()
-
-
 def get_time_stamp():
     return int(time.time())
 
