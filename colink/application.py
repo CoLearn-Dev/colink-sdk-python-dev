@@ -10,6 +10,9 @@ import copy
 import redis
 from urllib.parse import urlparse
 import uuid
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives import hashes
 from colink.colink_pb2 import *
 from colink.colink_pb2_grpc import CoLinkStub, CoLinkServicer
 from colink.colink_remote_storage_pb2 import *
@@ -136,12 +139,12 @@ def get_task_id(self) -> str:
 
 def import_user(
     self,
-    public_key: secp256k1.PublicKey,
+    public_key_vec: bytes,
     signature_timestamp: int,
     expiration_timestamp: int,
-    signature: str,
+    signature: bytes,
 ) -> str:
-    public_key_vec = public_key_to_vec(public_key)
+    #public_key_vec = public_key_to_vec(public_key)
     client = self._grpc_connect(self.core_addr)
     try:
         response = client.ImportUser(

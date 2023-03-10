@@ -59,6 +59,7 @@ setup(
     packages=["colink"],  # same as name
     install_requires=[
         grpc_tools_version,
+        "starkbank-ecdsa==2.2.0",
         "cryptography==39.0.1",
         "secp256k1==0.14.0",
         "pika==1.2.0",
