@@ -9,7 +9,7 @@ jobs:
     strategy:
       matrix:
         mq: [standalone, rabbitmq, redis]
-        ci_image: [macos-latest]
+        ci_image: [ubuntu-latest, macos-latest]
         include:
           - mq: rabbitmq
             docker_image: "rabbitmq:3.8-management"
