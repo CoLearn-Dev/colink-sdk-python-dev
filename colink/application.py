@@ -10,6 +10,7 @@ import copy
 import redis
 from urllib.parse import urlparse
 import uuid
+import hashlib
 import ecdsa
 from colink.colink_pb2 import *
 from colink.colink_pb2_grpc import CoLinkStub, CoLinkServicer
@@ -142,7 +143,6 @@ def import_user(
     expiration_timestamp: int,
     signature: bytes,
 ) -> str:
-    #public_key_vec = public_key_to_vec(public_key)
     client = self._grpc_connect(self.core_addr)
     try:
         response = client.ImportUser(
@@ -479,7 +479,7 @@ def prepare_import_user_signature(
         + expiration_timestamp.to_bytes(8, byteorder="little")
         + core_pub_key
     )  # connect them all
-    signature = user_sec_key.sign(msg)  # sign and get signature
+    signature = user_sec_key.sign(msg, hashfunc=hashlib.sha256)  # sign and get signature
     return signature_timestamp, signature
 
 
