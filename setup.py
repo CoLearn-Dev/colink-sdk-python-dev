@@ -59,9 +59,9 @@ setup(
     packages=["colink"],  # same as name
     install_requires=[
         grpc_tools_version,
+        "cryptography==39.0.1",
         "secp256k1==0.14.0",
         "pika==1.2.0",
-        "cryptography==39.0.1",
         "pyjwt==2.6.0",
         "requests==2.28.1",
         "redis==4.5.1"

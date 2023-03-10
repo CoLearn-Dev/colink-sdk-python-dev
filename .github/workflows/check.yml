@@ -48,14 +48,16 @@ jobs:
         run: pip install  .
       - name: Install Pytest
         run: pip install pytest
+      - name: Install Pytest-timeout
+        run: pip install pytest-timeout
       - name: Run tests
         if: ${{ matrix.mq != 'standalone' }}
         env:
           COLINK_SERVER_MQ_URI: ${{ matrix.mq_uri }}
           COLINK_SERVER_MQ_API: ${{ matrix.mq_api }}
-        run: pytest test
+        run: pytest --timeout=300
         timeout-minutes: 5
       - name: Run tests (standalone)
         if: ${{ matrix.mq == 'standalone' }}
-        run: pytest test
+        run: pytest --timeout=300
         timeout-minutes: 5
