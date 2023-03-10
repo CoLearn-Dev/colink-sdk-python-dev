@@ -50,6 +50,10 @@ jobs:
         run: pip install pytest
       - name: Install Pytest-timeout
         run: pip install pytest-timeout
+      - name: MQ test
+        if: ${{ matrix.mq == 'rabbitmq' }}
+        run: python test/test_protocol_variable_transfer.py
+        timeout-minutes: 2
       - name: Run tests
         if: ${{ matrix.mq != 'standalone' }}
         env:
