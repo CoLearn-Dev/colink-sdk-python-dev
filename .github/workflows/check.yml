@@ -53,18 +53,36 @@ jobs:
       - name: Sleep
         if: ${{ matrix.mq == 'rabbitmq' }}
         run: sleep 60
-      - name: Run tests
+      - name: Run tests1
         if: ${{ matrix.mq != 'standalone' }}
         env:
           COLINK_SERVER_MQ_URI: ${{ matrix.mq_uri }}
           COLINK_SERVER_MQ_API: ${{ matrix.mq_api }}
         run: pytest test/test_protocol_variable_transfer.py
-             pytest test/test_python.py
-             pytest test/test_user_management.py
-        timeout-minutes: 5
-      - name: Run tests (standalone)
+        timeout-minutes: 2
+      - name: Run tests2
+        if: ${{ matrix.mq != 'standalone' }}
+        env:
+          COLINK_SERVER_MQ_URI: ${{ matrix.mq_uri }}
+          COLINK_SERVER_MQ_API: ${{ matrix.mq_api }}       
+        run: pytest test/test_python.py
+        timeout-minutes: 2
+      - name: Run tests3
+        if: ${{ matrix.mq != 'standalone' }}
+        env:
+          COLINK_SERVER_MQ_URI: ${{ matrix.mq_uri }}
+          COLINK_SERVER_MQ_API: ${{ matrix.mq_api }}
+        run: pytest test/test_user_management.py
+        timeout-minutes: 2
+      - name: Run tests (standalone)1
         if: ${{ matrix.mq == 'standalone' }}
         run: pytest test/test_protocol_variable_transfer.py
-             pytest test/test_python.py
-             pytest test/test_user_management.py
-        timeout-minutes: 5
+        timeout-minutes: 2
+      - name: Run tests (standalone)2
+        if: ${{ matrix.mq == 'standalone' }}
+        run: pytest test/test_python.py
+        timeout-minutes: 2
+      - name: Run tests (standalone)3
+        if: ${{ matrix.mq == 'standalone' }}
+        run: pytest test/test_user_management.py
+        timeout-minutes: 2
