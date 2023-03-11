@@ -2,6 +2,8 @@ import logging
 from typing import List, Any
 import colink as CL
 from threading import Thread
+import logging
+import copy
 from .p2p_inbox import _recv_variable_p2p, _send_variable_p2p
 from .application import try_convert_to_bytes
 
@@ -50,7 +52,11 @@ def recv_variable_with_remote_storage(self, key: str, sender: CL.Participant) ->
 def send_variable(self, key: str, payload: Any, receivers: List[CL.Participant]):
     def thd_send_var(cl, key: str, payload: bytes, receiver: CL.Participant):
         try:
-            _send_variable_p2p(cl, key, payload, receiver)
+            for i in range(len(receivers)):
+                if receivers[i]==receiver:
+                    idx=i+1
+                    break
+            _send_variable_p2p(cl, key, payload, receiver, idx)
         except Exception as e:
             cl.send_variable_with_remote_storage(key, payload, [receiver])
 

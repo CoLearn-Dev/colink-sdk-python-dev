@@ -12,6 +12,7 @@ import threading
 from threading import Condition
 import ctypes
 import atexit
+import logging
 from cryptography import x509
 from cryptography.hazmat.primitives.serialization import Encoding
 from tempfile import NamedTemporaryFile
@@ -140,8 +141,9 @@ class VtP2pCtx:
         self.remote_inboxes = remote_inboxs if remote_inboxs else {}
 
 
-def _send_variable_p2p(cl, key: str, payload: bytes, receiver: CL.Participant):
+def _send_variable_p2p(cl, key: str, payload: bytes, receiver: CL.Participant, idx):
     if not cl.vt_p2p_ctx.remote_inboxes.get(receiver.user_id, None):
+        logging.warning(f'round {payload} send to user {idx} wait inbox')
         inbox = cl.recv_variable_with_remote_storage("inbox", receiver)
         vt_inbox_dic = json.loads(inbox)
         if isinstance(vt_inbox_dic["tls_cert"], list):
@@ -152,7 +154,9 @@ def _send_variable_p2p(cl, key: str, payload: bytes, receiver: CL.Participant):
         if not inbox.addr:
             inbox = None
         cl.vt_p2p_ctx.remote_inboxes[receiver.user_id] = inbox
+        logging.warning(f'round {payload} send to user {idx} built inbox')
     remote_inbox = cl.vt_p2p_ctx.remote_inboxes.get(receiver.user_id, None)
+    logging.warning(f'round {payload} send to user {idx} got inbox')
     if remote_inbox is not None:
         ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         cert = x509.load_der_x509_certificate(remote_inbox.tls_cert)
@@ -163,15 +167,20 @@ def _send_variable_p2p(cl, key: str, payload: bytes, receiver: CL.Participant):
         cert_file.close()
         ctx.check_hostname = False
         stripped_addr = remote_inbox.addr.strip("https://")
+        logging.warning(f'round {payload} send to user {idx} before conn')
         conn = HTTPSConnection(stripped_addr, context=ctx)
+        logging.warning(f'round {payload} send to user {idx} start conn')
         headers = {
             "user_id": cl.get_user_id(),
             "key": key,
             "token": remote_inbox.vt_jwt,
         }
+        logging.warning(f'round {payload} send to user {idx} before post')
         conn.request("POST", "/post", payload, headers)
+        logging.warning(f'round {payload} send to user {idx} end post')
         try:
             response = conn.getresponse()
+            logging.warning(f'round {payload} send to user {idx} end response')
             if response.getcode() != Status_OK:
                 raise Exception(f"Remote inbox: error {response.getcode()}")
         except Exception as e:
@@ -184,9 +193,12 @@ def _recv_variable_p2p(cl, key: str, sender: CL.Participant) -> bytes:
     # send inbox information to the sender by remote_storage
     if not sender.user_id in cl.vt_p2p_ctx.has_configured_inbox:
         # create inbox if it does not exist
+        logging.warning(f"user {cl.ID}  round {cl.round} start recv")
         if cl.vt_p2p_ctx.public_addr and cl.vt_p2p_ctx.has_created_inbox == False:
+            logging.warning(f"user {cl.ID}  round {cl.round} start server")
             cl.vt_p2p_ctx.inbox_server = VTInboxServer()
             cl.vt_p2p_ctx.has_created_inbox = True
+            logging.warning(f"user {cl.ID}  round {cl.round} started server")
         # generate vt_inbox information for the sender
         if cl.vt_p2p_ctx.public_addr:
             jwt_secret = cl.vt_p2p_ctx.inbox_server.jwt_secret
@@ -213,16 +225,21 @@ def _recv_variable_p2p(cl, key: str, sender: CL.Participant) -> bytes:
         cl.vt_p2p_ctx.has_configured_inbox.add(sender.user_id)
     if cl.vt_p2p_ctx.public_addr is None:
         raise Exception("Remote inbox: not available")
+    logging.warning(f"receiver user {cl.ID}  round {cl.round} start condition")
     tx = Condition()
     inbox_server = cl.vt_p2p_ctx.inbox_server
+    logging.warning(f"receiver user {cl.ID}  round {cl.round} try data")
     data = inbox_server.data_map.get((sender.user_id, key), None)
     if data is not None:
         return data
+    logging.warning(f"receiver user {cl.ID}  round {cl.round} no data")
     tx.acquire()
     inbox_server.notification_channels[(sender.user_id, key)] = tx
     tx.wait()
+    logging.warning(f"receiver user {cl.ID}  round {cl.round} got again data")
     data = inbox_server.data_map.get((sender.user_id, key), None)
     tx.release()
+    logging.warning(f"receiver user {cl.ID}  round {cl.round} lock released")
     if data is not None:
         return data
     else:
