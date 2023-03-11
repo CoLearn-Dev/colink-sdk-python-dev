@@ -55,8 +55,10 @@ jobs:
         env:
           COLINK_SERVER_MQ_URI: ${{ matrix.mq_uri }}
           COLINK_SERVER_MQ_API: ${{ matrix.mq_api }}
-        run: python test/test_protocol_variable_transfer.py
-        timeout-minutes: 2
+        run: |
+          sleep 300
+          python test/test_protocol_variable_transfer.py
+        timeout-minutes: 10
       - name: Run tests
         if: ${{ matrix.mq != 'standalone' }}
         env:
