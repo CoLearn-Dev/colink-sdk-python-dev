@@ -74,6 +74,26 @@ jobs:
           COLINK_SERVER_MQ_API: ${{ matrix.mq_api }}
         run: pytest test/test_user_management.py
         timeout-minutes: 10
+      - name: Run tests (standalone)31
+        if: ${{ matrix.mq == 'standalone' }}
+        run: pytest test/test_user_management.py
+        timeout-minutes: 10
+      - name: Run tests (standalone)32
+        if: ${{ matrix.mq == 'standalone' }}
+        run: pytest test/test_user_management.py
+        timeout-minutes: 10
+      - name: Run tests (standalone)33
+        if: ${{ matrix.mq == 'standalone' }}
+        run: pytest test/test_user_management.py
+        timeout-minutes: 10
+      - name: Run tests (standalone)34
+        if: ${{ matrix.mq == 'standalone' }}
+        run: pytest test/test_user_management.py
+        timeout-minutes: 10
+      - name: Run tests (standalone)35
+        if: ${{ matrix.mq == 'standalone' }}
+        run: pytest test/test_user_management.py
+        timeout-minutes: 10
       - name: Run tests (standalone)1
         if: ${{ matrix.mq == 'standalone' }}
         run: pytest test/test_protocol_variable_transfer.py
