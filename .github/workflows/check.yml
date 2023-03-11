@@ -52,6 +52,9 @@ jobs:
         run: pip install pytest-timeout
       - name: MQ test
         if: ${{ matrix.mq == 'rabbitmq' }}
+        env:
+          COLINK_SERVER_MQ_URI: ${{ matrix.mq_uri }}
+          COLINK_SERVER_MQ_API: ${{ matrix.mq_api }}
         run: python test/test_protocol_variable_transfer.py
         timeout-minutes: 2
       - name: Run tests
