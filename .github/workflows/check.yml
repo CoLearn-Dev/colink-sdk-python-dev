@@ -8,7 +8,7 @@ jobs:
   colink_python_check:
     strategy:
       matrix:
-        mq: [standalone]
+        mq: [standalone, redis]
         ci_image: [ubuntu-latest, macos-latest]
         include:
           - mq: rabbitmq
