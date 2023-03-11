@@ -22,6 +22,21 @@ def thread_func(q, protocol_and_role, cl, vt_public_addr, user_func):
         q.put(e)
 
 
+def sleep_to_reconnect(q, cl):
+    counter = 0
+    while True:
+        try:
+            cl.request_info()
+        except Exception as e:
+            counter += 1
+            if counter >= 3:
+                q.put(e)
+                break
+        else:
+            counter = 0
+        time.sleep(32)
+
+
 class ProtocolOperator:
     def __init__(self, name: str):
         self.name = name
@@ -93,41 +108,24 @@ class ProtocolOperator:
         for t in threads:
             t.start()
         if keep_alive_when_disconnect:
-            while True:
-                if q.empty():
-                    if threading.active_count() == 1:
-                        break
-                else:
-                    err = q.get()
-                    raise err
-                time.sleep(0.1)
+            err = q.get(block=True)
+            raise err
         else:
-            counter = 0
-            timer = time.time() + random.randint(32, 64)
-            while True:
-                if q.empty():
-                    if threading.active_count() == 1:
-                        break
-                else:
-                    err = q.get()
-                    # in instance server and run_attach mode+standalone MQ, server closing MQ when shutdown may trigger this exception
-                    if attached and isinstance(err, redis.exceptions.ConnectionError):
-                        break
-                    else:
-                        raise err
-                # both catch thread error & detect server connection
-                if time.time() > timer:
-                    timer = time.time() + random.randint(32, 64)  # update timer
-                    try:
-                        cl.request_info()
-                    except Exception as e:
-                        counter += 1
-                        if counter >= 3:
-                            break
-                    else:
-                        counter = 0
-                # here we don't directly sleep 32~64s like rust because we have to detect sub-thread errors
-                time.sleep(0.1)
+            t = threading.Thread(
+                target=sleep_to_reconnect,
+                args=(
+                    q,
+                    cl,
+                ),
+                daemon=True,
+            )
+            t.start()
+            err = q.get(block=True)
+            # in instance server and run_attach mode+standalone MQ, server closing MQ when shutdown may trigger this exception
+            if attached and isinstance(err, redis.exceptions.ConnectionError):
+                pass
+            else:
+                raise err
 
     def run_attach(self, cl: CoLink):
         thread = Thread(
