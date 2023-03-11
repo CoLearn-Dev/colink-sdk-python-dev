@@ -58,6 +58,7 @@ def send_variable(self, key: str, payload: Any, receivers: List[CL.Participant])
                     break
             _send_variable_p2p(cl, key, payload, receiver, idx)
         except Exception as e:
+            logging.warning(f'round {payload} send to user {idx} got exception {str(e)}!')
             cl.send_variable_with_remote_storage(key, payload, [receiver])
 
     payload = try_convert_to_bytes(payload)
