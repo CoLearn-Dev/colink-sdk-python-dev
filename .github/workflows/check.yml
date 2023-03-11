@@ -8,7 +8,7 @@ jobs:
   colink_python_check:
     strategy:
       matrix:
-        mq: [standalone, redis]
+        mq: [standalone, rabbitmq, redis]
         ci_image: [ubuntu-latest, macos-latest]
         include:
           - mq: rabbitmq
@@ -18,7 +18,7 @@ jobs:
           - mq: redis
             docker_image: "redis"
             mq_uri: "redis://127.0.0.1:16379"  
-    runs-on: ${{matrix.ci_image}}
+    runs-on: ${{ matrix.ci_image }}
     defaults:
       run:
         shell: bash  
