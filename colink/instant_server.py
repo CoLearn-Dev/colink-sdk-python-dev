@@ -96,10 +96,10 @@ class InstantServer:
         atexit.register(self.clean)
 
     def clean(self):
-        subprocess.Popen(
-            ["pkill", "-9", "-P", str(self.process.pid)], stdout=DEVNULL, stderr=DEVNULL
-        ).wait()
-        self.process.kill()
+        #subprocess.Popen(
+        #    ["pkill", "-9", "-P", str(self.process.pid)], stdout=DEVNULL, stderr=DEVNULL
+        #).wait()
+        #self.process.kill()
         colink_home = get_colink_home()
         working_dir = os.path.join(colink_home, "instant_servers", self.id)
         shutil.rmtree(working_dir)
