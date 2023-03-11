@@ -52,7 +52,7 @@ jobs:
         run: pip install pytest-timeout
       - name: Sleep
         if: ${{ matrix.mq == 'rabbitmq' }}
-        run: sleep 30
+        run: sleep 60
       - name: Run tests1
         if: ${{ matrix.mq != 'standalone' }}
         env:
