@@ -13,7 +13,7 @@ jobs:
         include:
           - mq: rabbitmq
             docker_image: "rabbitmq:3.8-management"
-            mq_uri: "amqp://guest:guest@127.0.0.1"
+            mq_uri: "amqp://guest:guest@127.0.0.1:5672/"
             mq_api: "http://guest:guest@127.0.0.1:15672/api"
           - mq: redis
             docker_image: "redis"
@@ -55,10 +55,8 @@ jobs:
         env:
           COLINK_SERVER_MQ_URI: ${{ matrix.mq_uri }}
           COLINK_SERVER_MQ_API: ${{ matrix.mq_api }}
-        run: |
-          sleep 300
-          python test/test_protocol_variable_transfer.py
-        timeout-minutes: 10
+        run: python test/test_protocol_variable_transfer.py
+        timeout-minutes: 2
       - name: Run tests
         if: ${{ matrix.mq != 'standalone' }}
         env:
