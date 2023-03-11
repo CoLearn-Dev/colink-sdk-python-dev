@@ -96,7 +96,7 @@ jobs:
         timeout-minutes: 10
       - name: Run tests (standalone)0
         if: ${{ matrix.mq == 'standalone' }}
-        run: pytest test/test_protocol_variable_transfer_log.py
+        run: python3 test/test_protocol_variable_transfer_log.py
         timeout-minutes: 10
       - name: Run tests (standalone)1
         if: ${{ matrix.mq == 'standalone' }}
