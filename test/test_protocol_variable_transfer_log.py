@@ -33,7 +33,9 @@ def run_initiator(cl: CoLink, param: bytes, participants: List[CL.Participant]):
 @pop.handle("variable_transfer_test:receiver")
 def run_receiver(cl: CoLink, param: bytes, participants: List[CL.Participant]):
     ID = getid(cl, participants)
+    cl.ID = ID
     for i in range(NUM):
+        cl.round = i
         key = f"output{i}"
         key2 = f"output_remote_storage{i}"
         logging.warning(f"{ID} start recv round {i}")
