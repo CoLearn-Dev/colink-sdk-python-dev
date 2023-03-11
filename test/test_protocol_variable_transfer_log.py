@@ -4,12 +4,15 @@ import colink as CL
 import logging
 from colink import CoLink, byte_to_str, ProtocolOperator, InstantServer, InstantRegistry
 
-NUM=4
+NUM = 8
 
-def getid(cl:CoLink,participants: List[CL.Participant]):
-    for i in range(0,len(participants)):
-        if cl.get_user_id()==participants[i].user_id:
+
+def getid(cl: CoLink, participants: List[CL.Participant]):
+    for i in range(0, len(participants)):
+        if cl.get_user_id() == participants[i].user_id:
             return i
+
+
 pop = ProtocolOperator(__name__)
 
 
@@ -29,7 +32,7 @@ def run_initiator(cl: CoLink, param: bytes, participants: List[CL.Participant]):
 
 @pop.handle("variable_transfer_test:receiver")
 def run_receiver(cl: CoLink, param: bytes, participants: List[CL.Participant]):
-    ID = getid(cl,participants)
+    ID = getid(cl, participants)
     for i in range(NUM):
         key = f"output{i}"
         key2 = f"output_remote_storage{i}"
@@ -74,7 +77,9 @@ def test_protocol_vt():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
-                        datefmt='%H:%M:%S',
-                        level=logging.WARNING)
+    logging.basicConfig(
+        format="%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s",
+        datefmt="%H:%M:%S",
+        level=logging.WARNING,
+    )
     test_protocol_vt()
