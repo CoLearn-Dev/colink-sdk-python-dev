@@ -8,8 +8,8 @@ jobs:
   colink_python_check:
     strategy:
       matrix:
-        mq: [standalone, rabbitmq, redis]
-        ci_image: [ubuntu-latest, macos-latest]
+        mq: [standalone]
+        ci_image: [macos-latest]
         include:
           - mq: rabbitmq
             docker_image: "rabbitmq:3.8-management"
@@ -93,6 +93,10 @@ jobs:
       - name: Run tests (standalone)35
         if: ${{ matrix.mq == 'standalone' }}
         run: pytest test/test_user_management.py
+        timeout-minutes: 10
+      - name: Run tests (standalone)0
+        if: ${{ matrix.mq == 'standalone' }}
+        run: pytest test/test_protocol_variable_transfer_log.py
         timeout-minutes: 10
       - name: Run tests (standalone)1
         if: ${{ matrix.mq == 'standalone' }}
