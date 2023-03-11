@@ -57,7 +57,7 @@ def send_variable(self, key: str, payload: Any, receivers: List[CL.Participant])
     payload = try_convert_to_bytes(payload)
     threads = []
     for receiver in receivers:
-        threads.append(Thread(target=thd_send_var, args=(self, key, payload, receiver)))
+        threads.append(Thread(target=thd_send_var, args=(self, key, payload, receiver)), daemon=True)
     for th in threads:
         th.start()
 
