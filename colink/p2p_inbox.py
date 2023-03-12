@@ -170,9 +170,6 @@ def _send_variable_p2p(cl, key: str, payload: bytes, receiver: CL.Participant, i
         ctx.check_hostname = False
         stripped_addr = remote_inbox.addr.strip("https://")
         logging.warning(f'round {payload} send to user {idx} before conn')
-        
-        conn = HTTPSConnection(stripped_addr, context=ctx)
-        logging.warning(f'round {payload} send to user {idx} start conn')
         headers = {
             "user_id": cl.get_user_id(),
             "key": key,
@@ -183,15 +180,12 @@ def _send_variable_p2p(cl, key: str, payload: bytes, receiver: CL.Participant, i
         ssl_context.check_hostname = False
         ssl_context.load_verify_locations(cert_file.name)
         req = urllib.request.Request(remote_inbox.addr, data=payload, headers=headers, method='POST')
-        #response = requests.post(url=remote_inbox.addr, data=payload, headers=headers, verify=False, cert=cert_file.name)
         cert_file.close()
         logging.warning(f'round {payload} send to user {idx} end post')
         try:
-            #response = conn.getresponse()
             logging.warning(f'round {payload} send to user {idx} end addr:{stripped_addr}')
-            #if response.getcode() != Status_OK:
-            #if response.status_code != Status_OK:
             response = urllib.request.urlopen(req, context=ssl_context)
+            logging.warning(f'round {payload} send to user {idx} URL OPENED!')
             if response.status != Status_OK:
                 raise Exception(f"Remote inbox: error {response.status_code}")
         except Exception as e:
