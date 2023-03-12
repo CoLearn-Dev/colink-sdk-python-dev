@@ -56,8 +56,8 @@ jobs:
       - name: Run tests (standalone)31
         if: ${{ matrix.mq == 'standalone' }}
         run: pytest test/test_user_management.py
-        timeout-minutes: 10
+        timeout-minutes: 2
       - name: Run tests (standalone)0
         if: ${{ matrix.mq == 'standalone' }}
         run: python3 test/test_protocol_variable_transfer_log.py
-        timeout-minutes: 10
+        timeout-minutes: 2

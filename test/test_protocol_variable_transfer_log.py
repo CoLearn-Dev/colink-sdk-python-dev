@@ -3,7 +3,7 @@ from typing import List
 import colink as CL
 import logging
 from colink import CoLink, byte_to_str, ProtocolOperator, InstantServer, InstantRegistry
-
+import time
 NUM = 8
 
 
@@ -24,10 +24,12 @@ def run_initiator(cl: CoLink, param: bytes, participants: List[CL.Participant]):
         logging.warning(f"start send {i}")
         cl.send_variable(key, bytes(str(i),encoding='utf-8'), participants[1 : len(participants)])
         logging.warning(f"end send {i}")
+        time.sleep(1)
         cl.send_variable_with_remote_storage(
             key2, bytes(str(i),encoding='utf-8'), participants[1 : len(participants)]
         )
         logging.warning(f"end send storage{i}")
+        time.sleep(1)
 
 
 @pop.handle("variable_transfer_test:receiver")
