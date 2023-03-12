@@ -64,6 +64,7 @@ setup(
         "pika==1.2.0",
         "pyjwt==2.6.0",
         "requests==2.28.1",
+        "requests_toolbelt==0.10.1",
         "redis==4.5.1"
     ],  # external packages as dependencies
 )
