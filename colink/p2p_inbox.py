@@ -176,7 +176,13 @@ def _send_variable_p2p(cl, key: str, payload: bytes, receiver: CL.Participant, i
             "token": remote_inbox.vt_jwt,
         }
         logging.warning(f'round {payload} send to user {idx} before post')
-        conn.request("POST", "/post", payload, headers)
+        try:
+            conn.request("POST", "/post", payload, headers)
+        except Exception as e:
+            logging.warning(f'round {payload} send to user {idx} got exception {e}, try resend')
+            conn.request("POST", "/post", payload, headers)
+            logging.warning(f'round {payload} send to user {idx} got exception end resend')
+        
         logging.warning(f'round {payload} send to user {idx} end post')
         try:
             response = conn.getresponse()
