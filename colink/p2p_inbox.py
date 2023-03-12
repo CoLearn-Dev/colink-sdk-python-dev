@@ -12,6 +12,7 @@ from threading import Condition
 import ctypes
 import atexit
 import logging
+import time
 from cryptography import x509
 import requests
 from requests_toolbelt.adapters import host_header_ssl
@@ -37,6 +38,9 @@ class VTInBox_RequestHandler(BaseHTTPRequestHandler):
         self.send_response_only(resp)
         self.send_header("Content-type", "text/plaintext")
         self.end_headers()
+    
+    def do_GET(self):
+        self._send_response(Status_OK)
 
     def do_POST(self):
         data = self.server.data
@@ -108,7 +112,7 @@ class VTInboxServer:
             certfile=cert_file.name,
             server_side=True,
         )
-        cert_file.close()
+        
         priv_key_file.close()
         self.server_thread = threading.Thread(
             target=httpd.serve_forever, args=(), daemon=True
@@ -121,7 +125,19 @@ class VTInboxServer:
         self.data_map = httpd.data
         self.notification_channels = httpd.notification_channels
         atexit.register(self.clean)
-
+        while True:
+            try:
+                s = requests.Session()
+                s.mount("https://", host_header_ssl.HostHeaderSSLAdapter())
+                response = s.get(f"https://127.0.0.1:{port}",headers={"Host": "vt-p2p.colink",},verify=cert_file.name,cert=None)
+            except Exception as error:
+                logging.warning('Server failed once!')
+                time.sleep(0.5)
+                pass
+            else:
+                logging.warning('Server CDCG!')
+                break
+        cert_file.close()
     def clean(self):
         kill_thread(self.server_thread)
 
