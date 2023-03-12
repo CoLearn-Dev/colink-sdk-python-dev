@@ -3,8 +3,6 @@ import colink as CL
 import jwt
 import json
 import secrets
-import requests
-from http.client import HTTPSConnection
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import ssl
 import socket
@@ -15,7 +13,8 @@ import ctypes
 import atexit
 import logging
 from cryptography import x509
-import urllib
+import requests
+from requests_toolbelt.adapters import host_header_ssl
 from cryptography.hazmat.primitives.serialization import Encoding
 from tempfile import NamedTemporaryFile
 from .tls_utils import gen_cert
@@ -111,7 +110,9 @@ class VTInboxServer:
         )
         cert_file.close()
         priv_key_file.close()
-        self.server_thread = threading.Thread(target=httpd.serve_forever, args=(), daemon=True)
+        self.server_thread = threading.Thread(
+            target=httpd.serve_forever, args=(), daemon=True
+        )
         httpd.thread = self.server_thread
         self.server_thread.start()
         self.port = port
@@ -145,7 +146,7 @@ class VtP2pCtx:
 
 def _send_variable_p2p(cl, key: str, payload: bytes, receiver: CL.Participant, idx):
     if not cl.vt_p2p_ctx.remote_inboxes.get(receiver.user_id, None):
-        logging.warning(f'round {payload} send to user {idx} wait inbox')
+        logging.warning(f"round {payload} send to user {idx} wait inbox")
         inbox = cl.recv_variable_with_remote_storage("inbox", receiver)
         vt_inbox_dic = json.loads(inbox)
         if isinstance(vt_inbox_dic["tls_cert"], list):
@@ -156,40 +157,47 @@ def _send_variable_p2p(cl, key: str, payload: bytes, receiver: CL.Participant, i
         if not inbox.addr:
             inbox = None
         cl.vt_p2p_ctx.remote_inboxes[receiver.user_id] = inbox
-        logging.warning(f'round {payload} send to user {idx} built inbox')
+        logging.warning(f"round {payload} send to user {idx} built inbox")
     remote_inbox = cl.vt_p2p_ctx.remote_inboxes.get(receiver.user_id, None)
-    logging.warning(f'round {payload} send to user {idx} got inbox')
+    logging.warning(f"round {payload} send to user {idx} got inbox")
     if remote_inbox is not None:
-        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         cert = x509.load_der_x509_certificate(remote_inbox.tls_cert)
         cert_file = NamedTemporaryFile()
         cert_file.write(cert.public_bytes(Encoding.PEM))  # conver DER format to PEM
         cert_file.seek(0)
-        ctx.load_verify_locations(cert_file.name)
-        
-        ctx.check_hostname = False
         stripped_addr = remote_inbox.addr.strip("https://")
-        logging.warning(f'round {payload} send to user {idx} before conn')
+        logging.warning(f"round {payload} send to user {idx} before conn")
         headers = {
             "user_id": cl.get_user_id(),
             "key": key,
             "token": remote_inbox.vt_jwt,
+            "Host": "vt-p2p.colink",
         }
-        logging.warning(f'round {payload} send to user {idx} before post')
-        ssl_context = ssl.create_default_context()
-        ssl_context.check_hostname = False
-        ssl_context.load_verify_locations(cert_file.name)
-        req = urllib.request.Request(remote_inbox.addr, data=payload, headers=headers, method='POST')
-        cert_file.close()
-        logging.warning(f'round {payload} send to user {idx} end post')
+        logging.warning(f"round {payload} send to user {idx} before post")
+        # ssl_context = ssl.create_default_context()
+        # ssl_context.check_hostname = False
+        # ssl_context.load_verify_locations(cert_file.name)
+        # req = urllib.request.Request(remote_inbox.addr, data=payload, headers=headers, method='POST')
+        s = requests.Session()
+        s.mount("https://", host_header_ssl.HostHeaderSSLAdapter())
+        logging.warning(f"round {payload} send to user {idx} end post")
         try:
-            logging.warning(f'round {payload} send to user {idx} end addr:{stripped_addr}')
-            response = urllib.request.urlopen(req, context=ssl_context)
-            logging.warning(f'round {payload} send to user {idx} URL OPENED!')
-            if response.status != Status_OK:
-                raise Exception(f"Remote inbox: error {response.status_code}")
+            logging.warning(
+                f"round {payload} send to user {idx} end addr:{stripped_addr}"
+            )
+            resp = s.post(
+                url=remote_inbox.addr,
+                data=payload,
+                headers=headers,
+                verify=cert_file.name,
+                cert=None,
+            )
+            logging.warning(f"round {payload} send to user {idx} URL OPENED!")
+            if resp.status_code != Status_OK:
+                raise Exception(f"Remote inbox: error {resp.status_code}")
         except Exception as e:
             raise e
+        cert_file.close()
     else:
         raise Exception("Remote inbox: not available")
 
