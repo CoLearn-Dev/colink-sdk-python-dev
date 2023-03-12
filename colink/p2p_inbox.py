@@ -180,7 +180,7 @@ def _send_variable_p2p(cl, key: str, payload: bytes, receiver: CL.Participant, i
         logging.warning(f'round {payload} send to user {idx} end post')
         try:
             response = conn.getresponse()
-            logging.warning(f'round {payload} send to user {idx} end response')
+            logging.warning(f'round {payload} send to user {idx} end addr:{stripped_addr} response code:{response.getcode()}')
             if response.getcode() != Status_OK:
                 raise Exception(f"Remote inbox: error {response.getcode()}")
         except Exception as e:
@@ -199,6 +199,8 @@ def _recv_variable_p2p(cl, key: str, sender: CL.Participant) -> bytes:
             cl.vt_p2p_ctx.inbox_server = VTInboxServer()
             cl.vt_p2p_ctx.has_created_inbox = True
             logging.warning(f"user {cl.ID}  round {cl.round} started server")
+        else:
+            logging.warning(f"user {cl.ID}  round {cl.round} server already started")
         # generate vt_inbox information for the sender
         if cl.vt_p2p_ctx.public_addr:
             jwt_secret = cl.vt_p2p_ctx.inbox_server.jwt_secret
