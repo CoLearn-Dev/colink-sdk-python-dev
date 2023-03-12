@@ -38,38 +38,42 @@ class VTInBox_RequestHandler(BaseHTTPRequestHandler):
         self.send_response_only(resp)
         self.send_header("Content-type", "text/plaintext")
         self.end_headers()
-    
+
     def do_GET(self):
         self._send_response(Status_OK)
 
     def do_POST(self):
-        data = self.server.data
-        notification_channels = self.server.notification_channels
-        user_id = self.headers.get("user_id", None)
-        key = self.headers.get("key", None)
-        token = self.headers.get("token", None)
-        if user_id is None or key is None or token is None:
-            self._send_response(Status_BAD_REQUEST)
-            return
         try:
-            token = jwt.decode(token, self.server.jwt_secret, algorithms=["HS256"])
-        except Exception as e:
-            self._send_response(Status_UNAUTHORIZED)
-            return
+            data = self.server.data
+            notification_channels = self.server.notification_channels
+            user_id = self.headers.get("user_id", None)
+            key = self.headers.get("key", None)
+            token = self.headers.get("token", None)
+            if user_id is None or key is None or token is None:
+                self._send_response(Status_BAD_REQUEST)
+                return
+            try:
+                token = jwt.decode(token, self.server.jwt_secret, algorithms=["HS256"])
+            except Exception as e:
+                self._send_response(Status_UNAUTHORIZED)
+                return
 
-        if token["user_id"] != user_id:
-            self._send_response(Status_UNAUTHORIZED)
-            return
-        # payload
-        length = int(self.headers.get("content-length"))
-        body = self.rfile.read(length)
-        data[(user_id, key)] = body
-        nc = notification_channels.get((user_id, key), None)
-        if nc is not None:
-            nc.acquire()
-            nc.notify()
-            nc.release()
-        self._send_response(Status_OK)
+            if token["user_id"] != user_id:
+                self._send_response(Status_UNAUTHORIZED)
+                return
+            # payload
+            length = int(self.headers.get("content-length"))
+            body = self.rfile.read(length)
+            data[(user_id, key)] = body
+            nc = notification_channels.get((user_id, key), None)
+            if nc is not None:
+                nc.acquire()
+                nc.notify()
+                nc.release()
+            self._send_response(Status_OK)
+        except Exception as e:
+            logging.warning(f'httpserver error: {str(e)}')
+            pass
 
 
 # Kill thread code from https://github.com/fitoprincipe/ipygee/blob/ab622c0c8b4f66b7e131cf6b7aeb08e751ceb513/ipygee/threading.py#L12
@@ -112,7 +116,7 @@ class VTInboxServer:
             certfile=cert_file.name,
             server_side=True,
         )
-        
+
         priv_key_file.close()
         self.server_thread = threading.Thread(
             target=httpd.serve_forever, args=(), daemon=True
@@ -129,15 +133,23 @@ class VTInboxServer:
             try:
                 s = requests.Session()
                 s.mount("https://", host_header_ssl.HostHeaderSSLAdapter())
-                response = s.get(f"https://127.0.0.1:{port}",headers={"Host": "vt-p2p.colink",},verify=cert_file.name,cert=None)
+                response = s.get(
+                    f"https://127.0.0.1:{port}",
+                    headers={
+                        "Host": "vt-p2p.colink",
+                    },
+                    verify=cert_file.name,
+                    cert=None,
+                )
             except Exception as error:
-                logging.warning('Server failed once!')
+                logging.warning("Server failed once!")
                 time.sleep(0.5)
                 pass
             else:
-                logging.warning('Server CDCG!')
+                logging.warning("Server CDCG!")
                 break
         cert_file.close()
+
     def clean(self):
         kill_thread(self.server_thread)
 
