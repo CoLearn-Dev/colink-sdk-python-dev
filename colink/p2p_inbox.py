@@ -3,6 +3,7 @@ import colink as CL
 import jwt
 import json
 import secrets
+import requests
 from http.client import HTTPSConnection
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import ssl
@@ -14,6 +15,7 @@ import ctypes
 import atexit
 import logging
 from cryptography import x509
+import urllib
 from cryptography.hazmat.primitives.serialization import Encoding
 from tempfile import NamedTemporaryFile
 from .tls_utils import gen_cert
@@ -164,10 +166,11 @@ def _send_variable_p2p(cl, key: str, payload: bytes, receiver: CL.Participant, i
         cert_file.write(cert.public_bytes(Encoding.PEM))  # conver DER format to PEM
         cert_file.seek(0)
         ctx.load_verify_locations(cert_file.name)
-        cert_file.close()
+        
         ctx.check_hostname = False
         stripped_addr = remote_inbox.addr.strip("https://")
         logging.warning(f'round {payload} send to user {idx} before conn')
+        
         conn = HTTPSConnection(stripped_addr, context=ctx)
         logging.warning(f'round {payload} send to user {idx} start conn')
         headers = {
@@ -176,19 +179,21 @@ def _send_variable_p2p(cl, key: str, payload: bytes, receiver: CL.Participant, i
             "token": remote_inbox.vt_jwt,
         }
         logging.warning(f'round {payload} send to user {idx} before post')
-        try:
-            conn.request("POST", "/post", payload, headers)
-        except Exception as e:
-            logging.warning(f'round {payload} send to user {idx} got exception {e}, try resend')
-            conn.request("POST", "/post", payload, headers)
-            logging.warning(f'round {payload} send to user {idx} got exception end resend')
-        
+        ssl_context = ssl.create_default_context()
+        ssl_context.check_hostname = False
+        ssl_context.load_verify_locations(cert_file.name)
+        req = urllib.request.Request(remote_inbox.addr, data=payload, headers=headers, method='POST')
+        #response = requests.post(url=remote_inbox.addr, data=payload, headers=headers, verify=False, cert=cert_file.name)
+        cert_file.close()
         logging.warning(f'round {payload} send to user {idx} end post')
         try:
-            response = conn.getresponse()
-            logging.warning(f'round {payload} send to user {idx} end addr:{stripped_addr} response code:{response.getcode()}')
-            if response.getcode() != Status_OK:
-                raise Exception(f"Remote inbox: error {response.getcode()}")
+            #response = conn.getresponse()
+            logging.warning(f'round {payload} send to user {idx} end addr:{stripped_addr}')
+            #if response.getcode() != Status_OK:
+            #if response.status_code != Status_OK:
+            response = urllib.request.urlopen(req, context=ssl_context)
+            if response.status != Status_OK:
+                raise Exception(f"Remote inbox: error {response.status_code}")
         except Exception as e:
             raise e
     else:
