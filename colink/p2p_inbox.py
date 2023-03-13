@@ -15,6 +15,8 @@ import logging
 import time
 from cryptography import x509
 import requests
+import socketserver
+import http
 from requests_toolbelt.adapters import host_header_ssl
 from cryptography.hazmat.primitives.serialization import Encoding
 from tempfile import NamedTemporaryFile
@@ -32,6 +34,8 @@ Status_OK = 200
 Status_BAD_REQUEST = 400
 Status_UNAUTHORIZED = 401
 
+class ThreadedHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
+    daemon_threads = True
 
 class VTInBox_RequestHandler(BaseHTTPRequestHandler):
     def _send_response(self, resp: int):
@@ -106,7 +110,7 @@ class VTInboxServer:
         port = random.randint(10000, 20000)
         while socket.socket().connect_ex(("0.0.0.0", port)) == 0:
             port = random.randint(10000, 20000)
-        httpd = HTTPServer(("0.0.0.0", port), VTInBox_RequestHandler)
+        httpd = ThreadedHTTPServer(("0.0.0.0", port), VTInBox_RequestHandler)
         httpd.data = dict()  # pass to http request handler
         httpd.notification_channels = dict()
         httpd.jwt_secret = jwt_secret
