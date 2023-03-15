@@ -3,20 +3,17 @@ import colink as CL
 import jwt
 import json
 import secrets
-from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.server import BaseHTTPRequestHandler, HTTPServer
 import ssl
 import socket
 import random
-import threading
-from threading import Condition
+from threading import Thread, Condition
 import ctypes
 import atexit
 import logging
 import time
 from cryptography import x509
 import requests
-import socketserver
-import http
 from requests_toolbelt.adapters import host_header_ssl
 from cryptography.hazmat.primitives.serialization import Encoding
 from tempfile import NamedTemporaryFile
@@ -33,10 +30,6 @@ class VTInbox:
 Status_OK = 200
 Status_BAD_REQUEST = 400
 Status_UNAUTHORIZED = 401
-
-
-class ThreadedHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
-    daemon_threads = True
 
 
 class VTInBox_RequestHandler(BaseHTTPRequestHandler):
@@ -112,7 +105,7 @@ class VTInboxServer:
         port = random.randint(10000, 20000)
         while socket.socket().connect_ex(("0.0.0.0", port)) == 0:
             port = random.randint(10000, 20000)
-        httpd = ThreadedHTTPServer(("0.0.0.0", port), VTInBox_RequestHandler)
+        httpd = HTTPServer(("0.0.0.0", port), VTInBox_RequestHandler)
         httpd.data = dict()  # pass to http request handler
         httpd.notification_channels = dict()
         httpd.jwt_secret = jwt_secret
@@ -124,9 +117,7 @@ class VTInboxServer:
         )
 
         priv_key_file.close()
-        self.server_thread = threading.Thread(
-            target=httpd.serve_forever, args=(), daemon=True
-        )
+        self.server_thread = Thread(target=httpd.serve_forever, args=(), daemon=True)
         httpd.thread = self.server_thread
         self.server_thread.start()
         self.port = port
