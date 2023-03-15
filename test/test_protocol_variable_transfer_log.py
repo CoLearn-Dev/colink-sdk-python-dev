@@ -21,15 +21,10 @@ def run_initiator(cl: CoLink, param: bytes, participants: List[CL.Participant]):
     for i in range(NUM):
         key = f"output{i}"
         key2 = f"output_remote_storage{i}"
-        logging.warning(f"start send {i}")
         cl.send_variable(key, bytes(str(i),encoding='utf-8'), participants[1 : len(participants)])
-        logging.warning(f"end send {i}")
-        #time.sleep(1)
         cl.send_variable_with_remote_storage(
             key2, bytes(str(i),encoding='utf-8'), participants[1 : len(participants)]
         )
-        logging.warning(f"end send storage{i}")
-        #time.sleep(1)
 
 
 @pop.handle("variable_transfer_test:receiver")
@@ -40,14 +35,10 @@ def run_receiver(cl: CoLink, param: bytes, participants: List[CL.Participant]):
         cl.round = i
         key = f"output{i}"
         key2 = f"output_remote_storage{i}"
-        logging.warning(f"{ID} start recv round {i}")
         msg = cl.recv_variable(key, participants[0])
         cl.create_entry(f"tasks:{cl.get_task_id()}:output{i}", msg)
-        logging.warning(f"{ID } end recv round {i}")
-        logging.warning(f"{ID} start recv storage round {i}")
         msg = cl.recv_variable_with_remote_storage(key2, participants[0])
         cl.create_entry(f"tasks:{cl.get_task_id()}:output_remote_storage{i}", msg)
-        logging.warning(f"{ID} end recv storage round {i}")
 
 
 def test_protocol_vt():
@@ -71,13 +62,10 @@ def test_protocol_vt():
 
     for idx in range(1, NUM):
         for idx2 in range(0, NUM):
-            logging.warning(f"start read or wait user {idx} round{idx2}")
             res = cls[idx].read_or_wait(f"tasks:{task_id}:output{idx2}")
-            logging.warning(f"end read or wait user {idx} round{idx2}")
-            #assert byte_to_str(res) == data
+            print(idx, idx2, res)
             res = cls[idx].read_or_wait(f"tasks:{task_id}:output_remote_storage{idx2}")
-            logging.warning(f"end read or wait storage user {idx} round{idx2}")
-            #assert byte_to_str(res) == data
+            print(idx, idx2, res)
 
 
 if __name__ == "__main__":
