@@ -115,7 +115,6 @@ class VTInboxServer:
             certfile=cert_file.name,
             server_side=True,
         )
-
         priv_key_file.close()
         self.server_thread = Thread(target=httpd.serve_forever, args=(), daemon=True)
         httpd.thread = self.server_thread
@@ -205,7 +204,7 @@ def _send_variable_p2p(cl, key: str, payload: bytes, receiver: CL.Participant):
                 )
             except Exception as e:
                 lasterr = e
-                t = random.random() + 0.5
+                t = random.random() + 0.5  # sample from [0.5,1.5]
                 time.sleep(t)
             else:
                 if resp.status_code != Status_OK:
