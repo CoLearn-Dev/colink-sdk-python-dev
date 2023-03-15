@@ -9,6 +9,7 @@ import socket
 import atexit
 import requests
 import pika
+import logging
 import redis
 from colink import CoLink
 
@@ -96,10 +97,13 @@ class InstantServer:
         atexit.register(self.clean)
 
     def clean(self):
-        #subprocess.Popen(
-        #    ["pkill", "-9", "-P", str(self.process.pid)], stdout=DEVNULL, stderr=DEVNULL
-        #).wait()
-        #self.process.kill()
+        try:
+            subprocess.Popen(
+            ["pkill", "-9", "-P", str(self.process.pid)], stdout=DEVNULL, stderr=DEVNULL
+            ).wait(timeout=5)
+        except subprocess.TimeoutExpired as e:
+            logging.error(f"Instant server kill process timeout error")
+        self.process.kill()
         colink_home = get_colink_home()
         working_dir = os.path.join(colink_home, "instant_servers", self.id)
         shutil.rmtree(working_dir)
