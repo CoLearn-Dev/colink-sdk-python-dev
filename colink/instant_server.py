@@ -97,14 +97,13 @@ class InstantServer:
         atexit.register(self.clean)
 
     def clean(self):
-        #try:
-        raise NotImplementedError
         subprocess.Popen(
             ["pkill", "-9", "-P", str(self.process.pid)], stdout=DEVNULL, stderr=DEVNULL
-            ).wait(timeout=5)
-        #except subprocess.TimeoutExpired as e:
-        #    logging.error(f"Instant server kill process timeout error")
-        #self.process.kill()
+            ).wait(timeout=1)
+        subprocess.Popen(
+            ["kill", "-9", str(self.process.pid)], stdout=DEVNULL, stderr=DEVNULL
+            ).wait(timeout=1)
+        # self.process.kill()  # might get stuck?
         colink_home = get_colink_home()
         working_dir = os.path.join(colink_home, "instant_servers", self.id)
         shutil.rmtree(working_dir)
