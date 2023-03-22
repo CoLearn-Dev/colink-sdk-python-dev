@@ -98,6 +98,7 @@ class InstantServer:
 
     def clean(self):
         #try:
+        throw NotImplementedError
         subprocess.Popen(
             ["pkill", "-9", "-P", str(self.process.pid)], stdout=DEVNULL, stderr=DEVNULL
             ).wait(timeout=5)
