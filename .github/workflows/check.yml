@@ -44,6 +44,8 @@ jobs:
         with:
           python-version: "3.9"
           architecture: "x64"
+      - name: Check ulimit
+        run: ulimit -a
       - name: Install Requirements
         run: pip install  .
       - name: Install Pytest
