@@ -52,10 +52,6 @@ def recv_variable_with_remote_storage(self, key: str, sender: CL.Participant) ->
 def send_variable(self, key: str, payload: Any, receivers: List[CL.Participant]):
     def thd_send_var(cl, key: str, payload: bytes, receiver: CL.Participant):
         try:
-            for i in range(len(receivers)):
-                if receivers[i]==receiver:
-                    idx=i+1
-                    break
             _send_variable_p2p(cl, key, payload, receiver)
         except Exception as e:
             cl.send_variable_with_remote_storage(key, payload, [receiver])
