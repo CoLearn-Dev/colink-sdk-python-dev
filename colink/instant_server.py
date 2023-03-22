@@ -97,12 +97,8 @@ class InstantServer:
         atexit.register(self.clean)
 
     def clean(self):
-        subprocess.Popen(
-            ["pkill", "-9", "-P", str(self.process.pid)], stdout=DEVNULL, stderr=DEVNULL
-            ).wait(timeout=1)
-        subprocess.Popen(
-            ["kill", "-9", str(self.process.pid)], stdout=DEVNULL, stderr=DEVNULL
-            ).wait(timeout=1)
+        os.system(f"pkill -9 -P {str(self.process.pid)}")
+        os.system(f"kill -9 {str(self.process.pid)}")
         # self.process.kill()  # might get stuck?
         raise NotImplementedError
         colink_home = get_colink_home()
