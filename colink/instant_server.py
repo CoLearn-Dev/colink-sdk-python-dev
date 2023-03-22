@@ -99,8 +99,6 @@ class InstantServer:
     def clean(self):
         os.system(f"pkill -9 -P {str(self.process.pid)}")
         os.system(f"kill -9 {str(self.process.pid)}")
-        # self.process.kill()  # might get stuck?
-        raise NotImplementedError
         colink_home = get_colink_home()
         working_dir = os.path.join(colink_home, "instant_servers", self.id)
         shutil.rmtree(working_dir)
