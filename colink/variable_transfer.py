@@ -2,8 +2,6 @@ import logging
 from typing import List, Any
 import colink as CL
 from threading import Thread
-import logging
-import copy
 from .p2p_inbox import _recv_variable_p2p, _send_variable_p2p
 from .application import try_convert_to_bytes
 
@@ -59,7 +57,7 @@ def send_variable(self, key: str, payload: Any, receivers: List[CL.Participant])
     payload = try_convert_to_bytes(payload)
     threads = []
     for receiver in receivers:
-        threads.append(Thread(target=thd_send_var, args=(self, key, payload, receiver), daemon=True))
+        threads.append(Thread(target=thd_send_var, args=(self, key, payload, receiver)))
     for th in threads:
         th.start()
 

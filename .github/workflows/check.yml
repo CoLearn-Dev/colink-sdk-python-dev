@@ -6,33 +6,33 @@ on:
   pull_request:
 jobs:
   colink_python_check:
+    runs-on:  ubuntu-latest
+    defaults:
+      run:
+        shell: bash
     strategy:
       matrix:
         mq: [standalone, rabbitmq, redis]
-        ci_image: [ubuntu-latest, macos-latest]
         include:
           - mq: rabbitmq
             docker_image: "rabbitmq:3.8-management"
-            mq_uri: "amqp://guest:guest@127.0.0.1"
-            mq_api: "http://guest:guest@127.0.0.1:15672/api"
+            mq_uri: "amqp://guest:guest@localhost"
+            mq_api: "http://guest:guest@localhost:15672/api"
           - mq: redis
             docker_image: "redis"
-            mq_uri: "redis://127.0.0.1:16379"  
-    runs-on: ${{ matrix.ci_image }}
-    defaults:
-      run:
-        shell: bash  
+            mq_uri: "redis://localhost:16379"    
+    services:
+      mq:
+        image: ${{ matrix.docker_image }}
+        ports:
+          - 5672:5672   # rabbitmq
+          - 15672:15672 # rabbitmq
+          - 16379:6379  # redis
+      redis:  # for storage macro
+        image: redis
+        ports:
+          - 6379:6379
     steps:
-      - name: Install docker
-        if: ${{ startsWith(matrix.ci_image, 'macos') }}
-        run: |
-          brew install docker
-          colima start
-      - name: Start container (mq)
-        if: ${{ matrix.mq != 'standalone' }}
-        run: docker run -d -p 5672:5672 -p 15672:15672 -p 16379:6379 ${{ matrix.docker_image }}
-      - name: Start container (redis) # for storage macro
-        run: docker run -d -p 6379:6379 redis
       - name: Checkout
         uses: actions/checkout@v3
         with:
@@ -44,45 +44,18 @@ jobs:
         with:
           python-version: "3.9"
           architecture: "x64"
-      - name: Check ulimit
-        run: ulimit -a
       - name: Install Requirements
         run: pip install  .
       - name: Install Pytest
         run: pip install pytest
-      - name: Sleep
-        if: ${{ matrix.mq == 'rabbitmq' }}
-        run: sleep 60
-      - name: Run tests1
+      - name: Run tests
         if: ${{ matrix.mq != 'standalone' }}
         env:
           COLINK_SERVER_MQ_URI: ${{ matrix.mq_uri }}
           COLINK_SERVER_MQ_API: ${{ matrix.mq_api }}
-        run: pytest test/test_protocol_variable_transfer.py
-        timeout-minutes: 3
-      - name: Run tests2
-        if: ${{ matrix.mq != 'standalone' }}
-        env:
-          COLINK_SERVER_MQ_URI: ${{ matrix.mq_uri }}
-          COLINK_SERVER_MQ_API: ${{ matrix.mq_api }}       
-        run: pytest test/test_python.py
+        run: pytest test
         timeout-minutes: 5
-      - name: Run tests3
-        if: ${{ matrix.mq != 'standalone' }}
-        env:
-          COLINK_SERVER_MQ_URI: ${{ matrix.mq_uri }}
-          COLINK_SERVER_MQ_API: ${{ matrix.mq_api }}
-        run: pytest test/test_user_management.py
-        timeout-minutes: 1
-      - name: Run tests (standalone)1
+      - name: Run tests (standalone)
         if: ${{ matrix.mq == 'standalone' }}
-        run: pytest test/test_protocol_variable_transfer.py
-        timeout-minutes: 3
-      - name: Run tests (standalone)2
-        if: ${{ matrix.mq == 'standalone' }}
-        run: pytest test/test_python.py
+        run: pytest test
         timeout-minutes: 5
-      - name: Run tests (standalone)3
-        if: ${{ matrix.mq == 'standalone' }}
-        run: pytest test/test_user_management.py
-        timeout-minutes: 1

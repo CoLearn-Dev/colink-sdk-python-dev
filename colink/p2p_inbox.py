@@ -3,18 +3,16 @@ import colink as CL
 import jwt
 import json
 import secrets
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.client import HTTPSConnection
+from http.server import HTTPServer, BaseHTTPRequestHandler
 import ssl
 import socket
 import random
-from threading import Thread, Condition
+import threading
+from threading import Condition
 import ctypes
 import atexit
-import logging
-import time
 from cryptography import x509
-import requests
-from requests_toolbelt.adapters import host_header_ssl
 from cryptography.hazmat.primitives.serialization import Encoding
 from tempfile import NamedTemporaryFile
 from .tls_utils import gen_cert
@@ -38,41 +36,34 @@ class VTInBox_RequestHandler(BaseHTTPRequestHandler):
         self.send_header("Content-type", "text/plaintext")
         self.end_headers()
 
-    def do_GET(self):
-        self._send_response(Status_OK)
-
     def do_POST(self):
+        data = self.server.data
+        notification_channels = self.server.notification_channels
+        user_id = self.headers.get("user_id", None)
+        key = self.headers.get("key", None)
+        token = self.headers.get("token", None)
+        if user_id is None or key is None or token is None:
+            self._send_response(Status_BAD_REQUEST)
+            return
         try:
-            data = self.server.data
-            notification_channels = self.server.notification_channels
-            user_id = self.headers.get("user_id", None)
-            key = self.headers.get("key", None)
-            token = self.headers.get("token", None)
-            if user_id is None or key is None or token is None:
-                self._send_response(Status_BAD_REQUEST)
-                return
-            try:
-                token = jwt.decode(token, self.server.jwt_secret, algorithms=["HS256"])
-            except Exception as e:
-                self._send_response(Status_UNAUTHORIZED)
-                return
-
-            if token["user_id"] != user_id:
-                self._send_response(Status_UNAUTHORIZED)
-                return
-            # payload
-            length = int(self.headers.get("content-length"))
-            body = self.rfile.read(length)
-            data[(user_id, key)] = body
-            nc = notification_channels.get((user_id, key), None)
-            if nc is not None:
-                nc.acquire()
-                nc.notify()
-                nc.release()
-            self._send_response(Status_OK)
+            token = jwt.decode(token, self.server.jwt_secret, algorithms=["HS256"])
         except Exception as e:
-            logging.warning(f"HTTPServer error: {str(e)}")
-            pass
+            self._send_response(Status_UNAUTHORIZED)
+            return
+
+        if token["user_id"] != user_id:
+            self._send_response(Status_UNAUTHORIZED)
+            return
+        # payload
+        length = int(self.headers.get("content-length"))
+        body = self.rfile.read(length)
+        data[(user_id, key)] = body
+        nc = notification_channels.get((user_id, key), None)
+        if nc is not None:
+            nc.acquire()
+            nc.notify()
+            nc.release()
+        self._send_response(Status_OK)
 
 
 # Kill thread code from https://github.com/fitoprincipe/ipygee/blob/ab622c0c8b4f66b7e131cf6b7aeb08e751ceb513/ipygee/threading.py#L12
@@ -115,8 +106,9 @@ class VTInboxServer:
             certfile=cert_file.name,
             server_side=True,
         )
+        cert_file.close()
         priv_key_file.close()
-        self.server_thread = Thread(target=httpd.serve_forever, args=(), daemon=True)
+        self.server_thread = threading.Thread(target=httpd.serve_forever, args=(), daemon=True)
         httpd.thread = self.server_thread
         self.server_thread.start()
         self.port = port
@@ -125,23 +117,6 @@ class VTInboxServer:
         self.data_map = httpd.data
         self.notification_channels = httpd.notification_channels
         atexit.register(self.clean)
-        while True:
-            try:
-                s = requests.Session()
-                s.mount("https://", host_header_ssl.HostHeaderSSLAdapter())
-                response = s.get(
-                    f"https://127.0.0.1:{port}",
-                    headers={
-                        "Host": "vt-p2p.colink",
-                    },
-                    verify=cert_file.name,
-                )
-            except Exception as error:
-                time.sleep(0.5)
-                pass
-            else:
-                break
-        cert_file.close()
 
     def clean(self):
         kill_thread(self.server_thread)
@@ -179,41 +154,28 @@ def _send_variable_p2p(cl, key: str, payload: bytes, receiver: CL.Participant):
         cl.vt_p2p_ctx.remote_inboxes[receiver.user_id] = inbox
     remote_inbox = cl.vt_p2p_ctx.remote_inboxes.get(receiver.user_id, None)
     if remote_inbox is not None:
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         cert = x509.load_der_x509_certificate(remote_inbox.tls_cert)
         cert_file = NamedTemporaryFile()
         cert_file.write(cert.public_bytes(Encoding.PEM))  # conver DER format to PEM
         cert_file.seek(0)
+        ctx.load_verify_locations(cert_file.name)
+        cert_file.close()
+        ctx.check_hostname = False
+        stripped_addr = remote_inbox.addr.strip("https://")
+        conn = HTTPSConnection(stripped_addr, context=ctx)
         headers = {
             "user_id": cl.get_user_id(),
             "key": key,
             "token": remote_inbox.vt_jwt,
-            "Host": "vt-p2p.colink",
         }
-        s = requests.Session()
-        s.mount("https://", host_header_ssl.HostHeaderSSLAdapter())
-        MAX_TIMES = 5
-        retry_cnt = 0
-        lasterr = None
-        while retry_cnt < MAX_TIMES:
-            try:
-                resp = s.post(
-                    url=remote_inbox.addr,
-                    data=payload,
-                    headers=headers,
-                    verify=cert_file.name,
-                )
-            except Exception as e:
-                lasterr = e
-                t = random.random() + 0.5  # sample from [0.5,1.5]
-                time.sleep(t)
-            else:
-                if resp.status_code != Status_OK:
-                    raise Exception(f"Remote inbox: error {resp.status_code}")
-                break
-            retry_cnt += 1
-        cert_file.close()
-        if lasterr is not None:
-            raise lasterr
+        conn.request("POST", "/post", payload, headers)
+        try:
+            response = conn.getresponse()
+            if response.getcode() != Status_OK:
+                raise Exception(f"Remote inbox: error {response.getcode()}")
+        except Exception as e:
+            raise e
     else:
         raise Exception("Remote inbox: not available")
 
