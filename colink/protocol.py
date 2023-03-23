@@ -221,7 +221,7 @@ class CoLinkProtocol:
                         if cl.vt_p2p_ctx.inbox_server is not None:
                             cl.vt_p2p_ctx.inbox_server = None
                         self.cl.finish_task(task.task_id)
-                        logging.info("finnish task:%s", task.task_id)
+                        logging.info("finish task:%s", task.task_id)
                 else:
                     logging.error("Pull Task Error.")
                     raise Exception("Pull Task Error.")
