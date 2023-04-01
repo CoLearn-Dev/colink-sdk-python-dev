@@ -5,8 +5,8 @@ __pycache__/
 dist/
 colink.egg-info/
 build/
-colink_*pb2.py
-colink_*pb2_grpc.py
+colink/proto/v*/colink_*pb2.py
+colink/proto/v*/colink_*pb2_grpc.py
 *.log
 /target
 /.idea
