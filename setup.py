@@ -3,19 +3,19 @@ import subprocess
 import sys
 
 subprocess.check_call(
-    [sys.executable, "-m", "pip", "install", "grpcio-tools==1.50.0"]
-)
-subprocess.check_call(
-    [sys.executable, "./colink/proto/proto_gen.py", "v4"]
-)
-subprocess.check_call(
     [sys.executable, "-m", "pip", "install", "grpcio-tools==1.46.3"]
 )
 subprocess.check_call(
     [sys.executable, "./colink/proto/proto_gen.py", "v3"]
 )
 subprocess.check_call(
-    [sys.executable, "-m", "pip", "uninstall", "-y", "grpcio", "grpcio-tools", "protobuf"]
+    [sys.executable, "-m", "pip", "install", "grpcio-tools==1.50.0"]
+)
+subprocess.check_call(
+    [sys.executable, "./colink/proto/proto_gen.py", "v4"]
+)
+subprocess.check_call(
+    [sys.executable, "-m", "pip", "uninstall", "-y", "grpcio-tools"]
 )
 
 desc_file = open("README.md", "r")
