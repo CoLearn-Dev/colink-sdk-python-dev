@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 import subprocess
 import sys
 
@@ -6,13 +6,13 @@ subprocess.check_call(
     [sys.executable, "-m", "pip", "install", "grpcio-tools==1.50.0"]
 )
 subprocess.check_call(
-    [sys.executable, "proto_gen.py", "v4"]
+    [sys.executable, "./colink/proto/proto_gen.py", "v4"]
 )
 subprocess.check_call(
     [sys.executable, "-m", "pip", "install", "grpcio-tools==1.46.3"]
 )
 subprocess.check_call(
-    [sys.executable, "proto_gen.py", "v3"]
+    [sys.executable, "./colink/proto/proto_gen.py", "v3"]
 )
 subprocess.check_call(
     [sys.executable, "-m", "pip", "uninstall", "-y", "grpcio", "grpcio-tools", "protobuf"]
@@ -30,7 +30,7 @@ setup(
     long_description_content_type="text/markdown",
     author="Wenjie Qu",
     author_email="",
-    packages=["colink"],  # same as name
+    packages=find_packages(include=["colink", "colink.*"]),
     install_requires=[
         "grpcio>=1.27.2",
         "protobuf>=3.19.0,<5.0dev",
