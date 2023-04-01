@@ -11,14 +11,11 @@ from urllib.parse import urlparse
 import uuid
 from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
 import coincurve
-from colink.colink_pb2 import *
-from colink.colink_pb2_grpc import CoLinkStub, CoLinkServicer
-from colink.colink_remote_storage_pb2 import *
-from colink.colink_remote_storage_pb2_grpc import *
-from colink.colink_policy_module_pb2 import *
-from colink.colink_policy_module_pb2_grpc import *
-from colink.colink_registry_pb2 import *
-from colink.colink_registry_pb2_grpc import *
+from colink.proto.colink_pb2 import *
+from colink.proto.colink_pb2_grpc import CoLinkStub, CoLinkServicer
+from colink.proto.colink_remote_storage_pb2 import *
+from colink.proto.colink_policy_module_pb2 import *
+from colink.proto.colink_registry_pb2 import *
 
 
 class JWT:
