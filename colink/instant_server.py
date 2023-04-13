@@ -83,7 +83,7 @@ class InstantServer:
             args = args + ["--mq-api", mq_api]
         self.process = subprocess.Popen(
             args,
-            env={"COLINK_HOME": colink_home},
+            env={**os.environ, "COLINK_HOME": colink_home},
             cwd=working_dir,
         )
         while True:
