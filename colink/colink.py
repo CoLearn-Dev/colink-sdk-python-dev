@@ -57,6 +57,7 @@ class CoLink:
         read_keys,
         get_user_id,
         start_protocol_operator,
+        start_protocol_operator_full_config,
         stop_protocol_operator,
         generate_token_with_signature,
         get_core_addr,

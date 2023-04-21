@@ -7,5 +7,5 @@ if __name__ == "__main__":
     protocol_name = sys.argv[3]
     user_id = decode_jwt_without_validation(jwt).user_id
     cl = CoLink(addr, jwt)
-    instance_id = cl.start_protocol_operator(protocol_name, user_id)
+    instance_id = cl.start_protocol_operator(protocol_name, user_id, False)
     print("Instance id: {}".format(instance_id))

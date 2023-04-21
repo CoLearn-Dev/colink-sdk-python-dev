@@ -40,14 +40,17 @@ jobs:
       - name: Download Server
         run: bash download-server.sh
       - name: Install Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: "3.9"
           architecture: "x64"
       - name: Check ulimit
         run: ulimit -a
       - name: Install Requirements
-        run: pip install  .
+        run: |
+          python -m pip install --upgrade pip
+          pip install setuptools_rust
+          python setup.py install
       - name: Install Pytest
         run: pip install pytest
       - name: Sleep
