@@ -48,6 +48,7 @@ jobs:
         run: ulimit -a
       - name: Install Requirements
         run: |
+          which python
           python -m pip install --upgrade pip
           pip install  .
       - name: Install Pytest
