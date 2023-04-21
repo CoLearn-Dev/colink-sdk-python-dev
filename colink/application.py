@@ -431,9 +431,28 @@ def get_user_id(self) -> str:
     return auth_content.user_id
 
 
-def start_protocol_operator(self, protocol_name: str, user_id: str):
+def start_protocol_operator(
+    self,
+    protocol_name: str,
+    user_id: str,
+    upgrade: bool,
+) -> str:
+    return self.start_protocol_operator_full_config(protocol_name, user_id, upgrade, NONE, "", "", "")
+
+
+def start_protocol_operator_full_config(
+    self,
+    protocol_name: str,
+    user_id: str,
+    upgrade: bool,
+    source_type,
+    deploy_mode: str,
+    source: str,
+    vt_public_addr: str,
+) -> str:
     client = self._grpc_connect(self.core_addr)
-    request = StartProtocolOperatorRequest(protocol_name=protocol_name, user_id=user_id)
+    request = StartProtocolOperatorRequest(protocol_name=protocol_name, user_id=user_id, upgrade=upgrade,
+        source_type=source_type, deploy_mode=deploy_mode, source=source, vt_public_addr=vt_public_addr)
     response = client.StartProtocolOperator(
         request=request, metadata=get_jwt_auth(self.jwt)
     )
