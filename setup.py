@@ -14,6 +14,9 @@ subprocess.check_call(
 subprocess.check_call(
     [sys.executable, "./colink/proto/proto_gen.py", "v4"]
 )
+subprocess.check_call(
+    [sys.executable, "-m", "pip", "uninstall", "-y", "grpcio-tools"]
+)
 
 desc_file = open("README.md", "r")
 long_description = desc_file.read()
