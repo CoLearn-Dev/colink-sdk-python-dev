@@ -4,8 +4,7 @@ import sys
 import os
 
 subprocess.check_call(
-    [sys.executable, "-m", "pip", "install", "grpcio-tools==1.46.3"],
-    env={**os.environ}
+    ["pip", "install", "grpcio-tools==1.46.3"],
 )
 subprocess.check_call(
     [sys.executable, "./colink/proto/proto_gen.py", "v3"]
