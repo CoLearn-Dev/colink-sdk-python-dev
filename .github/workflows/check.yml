@@ -49,6 +49,7 @@ jobs:
       - name: Install Requirements
         run: |
           which python
+          /opt/hostedtoolcache/Python/3.9.16/x64/bin/python -m pip install grpcio-tools==1.46.3
           python -m pip install --upgrade pip
           pip install  .
       - name: Install Pytest
