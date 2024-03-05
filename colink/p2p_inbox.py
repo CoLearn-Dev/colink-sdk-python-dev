@@ -242,7 +242,7 @@ def _recv_variable_p2p(cl, key: str, sender: CL.Participant) -> bytes:
             {
                 "addr": vt_inbox.addr,
                 "vt_jwt": vt_inbox.vt_jwt,
-                "tls_cert": list(vt_inbox.tls_cert),
+                "tls_cert": list(vt_inbox.tls_cert) if vt_inbox.tls_cert is not None else None,
             }
         )
         cl.send_variable_with_remote_storage(
