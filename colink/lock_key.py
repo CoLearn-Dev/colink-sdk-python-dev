@@ -19,7 +19,7 @@ def lock_with_retry_time(
     rnd_num = random.getrandbits(32)-2**31
     while True:
         try:
-            self.create_entry("_lock:{}".format(key), rnd_num)
+            self.create_entry("_lock:{}".format(key), rnd_num, no_error_logging=True)
         except grpc.RpcError as e:
             pass
         else:

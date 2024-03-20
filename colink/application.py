@@ -203,7 +203,7 @@ def generate_token_with_expiration_time(
     return response.jwt
 
 
-def create_entry(self, key_name: str, payload: Any) -> str:
+def create_entry(self, key_name: str, payload: Any, no_error_logging=False) -> str:
     client = self._grpc_connect(self.core_addr)
     payload = try_convert_to_bytes(payload)
     try:
@@ -215,9 +215,10 @@ def create_entry(self, key_name: str, payload: Any) -> str:
             metadata=get_jwt_auth(self.jwt),
         )
     except grpc.RpcError as e:
-        logging.error(
-            f"CreateEntry Received RPC exception: code={e.code()} message={e.details()}"
-        )
+        if not no_error_logging:
+            logging.error(
+                f"CreateEntry Received RPC exception: code={e.code()} message={e.details()}"
+            )
         raise e
     else:
         return response.key_path
